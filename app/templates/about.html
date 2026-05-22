@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Tentang - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Tentang Aplikasi{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Sistem Buffer Stock</h3>
+            <p class="text-muted">Inventory Management System v1.0</p>
+        </div>
+        
+        <div class="about-content">
+            <h4>Tentang Sistem</h4>
+            <p>
+                Sistem Buffer Stock adalah aplikasi manajemen inventaris yang dirancang untuk membantu 
+                pengelolaan stok barang di gudang. Sistem ini menyediakan fitur pelacakan stok, 
+                pemakaian barang, dan pengajuan pembelian.
+            </p>
+            
+            <h4>Fitur Utama</h4>
+            <ul>
+                <li><strong>Manajemen Barang</strong> - Tambah, edit, dan hapus data barang</li>
+                <li><strong>Monitoring Stok</strong> - Pantau sisa stok dan safety stock</li>
+                <li><strong>Laporan Pemakaian</strong> - Lihat pemakaian barang per tahun</li>
+                <li><strong>Pengajuan Pembelian</strong> - Buat dan kelola PR (Purchase Request)</li>
+                <li><strong>Export CSV</strong> - Download data dalam format CSV</li>
+            </ul>
+            
+            <h4>Kontak</h4>
+            <p>Untuk pertanyaan lebih lanjut, hubungi tim IT.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+.about-content h4 {
+    margin: 20px 0 10px;
+    color: var(--gray-800);
+}
+
+.about-content p {
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+.about-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.about-content li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-600);
+}
+
+.about-content li::before {
+    content: '→ ';
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.about-content li strong {
+    color: var(--gray-800);
+}
+</style>

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Riwayat PR - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Riwayat Pengajuan Pembelian{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Filter Riwayat PR</h3>
+            <form method="GET" style="display:flex; gap:10px;">
+                <select name="status" onchange="this.form.submit()">
+                    <option value="">Semua Status</option>
+                    <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </form>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>No PR</th>
+                        <th>Tanggal</th>
+                        <th>Barang</th>
+                        <th>Qty</th>
+                        <th>Alasan</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pr in prs.items %}
+                    <tr>
+                        <td><code>{{ pr.no_pengajuan }}</code></td>
+                        <td>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ pr.item.nama_item }}</td>
+                        <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                        <td>{{ pr.alasan_pengajuan[:50] }}{% if pr.alasan_pengajuan|length > 50 %}...{% endif %}</td>
+                        <td>
+                            {% if pr.status == 'Pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% elif pr.status == 'Approved' %}
+                            <span class="badge badge-success">Approved</span>
+                            {% elif pr.status == 'Rejected' %}
+                            <span class="badge badge-danger">Rejected</span>
+                            {% else %}
+                            <span class="badge badge-info">Completed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center">Tidak ada data</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

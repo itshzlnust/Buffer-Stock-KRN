@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Stok Barang - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Stok Barang{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <form method="GET" class="filter-form">
+                <input type="text" name="search" placeholder="Cari barang..." value="{{ request.args.get('search', '') }}">
+                <select name="kategori">
+                    <option value="">Semua Kategori</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if request.args.get('kategori') == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                <a href="{{ url_for('main.stock') }}" class="btn btn-secondary"><i class="fas fa-sync"></i></a>
+            </form>
+            <a href="{{ url_for('main.items') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tambah Barang
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Barang</th>
+                        <th>Kategori</th>
+                        <th>Unit</th>
+                        <th>Stok Saat Ini</th>
+                        <th>Safety Stock</th>
+                        <th>Reorder Point</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items.items %}
+                    {% set stock = item.stock_items[0] if item.stock_items else none %}
+                    <tr>
+                        <td><code>{{ item.kode_item }}</code></td>
+                        <td>{{ item.nama_item }}</td>
+                        <td><span class="badge">{{ item.kategori }}</span></td>
+                        <td>{{ item.unit }}</td>
+                        <td>
+                            {% if stock %}
+                            <strong>{{ stock.quantity }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ stock.safety_stock if stock else '-' }}</td>
+                        <td>{{ stock.reorder_point if stock else '-' }}</td>
+                        <td>
+                            {% if stock %}
+                                {% if stock.quantity <= stock.safety_stock %}
+                                <span class="badge badge-danger">Critical</span>
+                                {% elif stock.quantity <= stock.reorder_point %}
+                                <span class="badge badge-warning">Reorder</span>
+                                {% else %}
+                                <span class="badge badge-success">Normal</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge">No Data</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editStock({{ item.id }}, '{{ item.kode_item }}', '{{ item.nama_item }}', {{ stock.quantity if stock else 0 }}, {{ stock.safety_stock if stock else 0 }}, {{ stock.reorder_point if stock else 0 }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Stock Modal -->
+<div id="stockModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Update Stok: <span id="modalItemName"></span></h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('main.update_stock') }}">
+            <input type="hidden" name="item_id" id="modalItemId">
+            <div class="form-group">
+                <label>Stok Saat Ini</label>
+                <input type="number" name="quantity" id="modalQuantity" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Safety Stock</label>
+                <input type="number" name="safety_stock" id="modalSafety" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Reorder Point</label>
+                <input type="number" name="reorder_point" id="modalReorder" required min="0">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editStock(id, kode, nama, qty, safety, reorder) {
+    document.getElementById('modalItemId').value = id;
+    document.getElementById('modalItemName').textContent = kode + ' - ' + nama;
+    document.getElementById('modalQuantity').value = qty;
+    document.getElementById('modalSafety').value = safety;
+    document.getElementById('modalReorder').value = reorder;
+    document.getElementById('stockModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('stockModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('stockModal');
+    if (event.target == modal) closeModal();
+}
+</script>
+{% endblock %}

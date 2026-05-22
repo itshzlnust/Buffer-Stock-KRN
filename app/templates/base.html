@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistem Buffer Stock{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-boxes"></i>
+                <span>Buffer Stock</span>
+            </div>
+            <p class="subtitle">Inventory Management System</p>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('main.index') }}" class="nav-item {% if request.endpoint == 'main.index' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            <div class="nav-section">Inventaris</div>
+            <a href="{{ url_for('main.items') }}" class="nav-item {% if 'items' in request.endpoint %}active{% endif %}">
+                <i class="fas fa-box"></i>
+                <span>Daftar Barang</span>
+            </a>
+            <a href="{{ url_for('main.stock') }}" class="nav-item {% if request.endpoint == 'main.stock' %}active{% endif %}">
+                <i class="fas fa-warehouse"></i>
+                <span>Stok Barang</span>
+            </a>
+            <a href="{{ url_for('main.usage') }}" class="nav-item {% if 'usage' in request.endpoint %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                <span>Pemakaian</span>
+            </a>
+            <a href="{{ url_for('main.purchase_list') }}" class="nav-item {% if 'purchase' in request.endpoint %}active{% endif %}">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Pengajuan Pembelian</span>
+            </a>
+            
+            <div class="nav-section">Laporan</div>
+            <a href="{{ url_for('main.criteria') }}" class="nav-item {% if request.endpoint == 'main.criteria' %}active{% endif %}">
+                <i class="fas fa-list-check"></i>
+                <span>Kriteria SAW</span>
+            </a>
+            <a href="{{ url_for('main.criteria_values') }}" class="nav-item {% if request.endpoint == 'main.criteria_values' %}active{% endif %}">
+                <i class="fas fa-table"></i>
+                <span>Nilai Kriteria</span>
+            </a>
+            <a href="{{ url_for('main.calculation') }}" class="nav-item {% if request.endpoint == 'main.calculation' %}active{% endif %}">
+                <i class="fas fa-calculator"></i>
+                <span>Perhitungan SAW</span>
+            </a>
+            <a href="{{ url_for('main.buffer_recommendation') }}" class="nav-item {% if request.endpoint == 'main.buffer_recommendation' %}active{% endif %}">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Rekomendasi Buffer</span>
+            </a>
+            <a href="{{ url_for('main.about') }}" class="nav-item">
+                <i class="fas fa-info-circle"></i>
+                <span>Tentang</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <p>Inventory System v1.0</p>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <header class="header">
+            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            <div class="header-actions">
+                <a href="{{ url_for('main.purchase_list') }}" class="header-link">
+                    <i class="fas fa-shopping-cart"></i> PR
+                </a>
+                <span class="date">{{ now.strftime('%d %B %Y') if now else now }}</span>
+            </div>
+        </header>
+        
+        <main class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) }}">
+                            <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else ('check-circle' if category == 'success' else ('exclamation-triangle' if category == 'warning' else 'info-circle')) }}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

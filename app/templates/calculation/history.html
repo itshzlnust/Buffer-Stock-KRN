@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Riwayat - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Riwayat Perhitungan{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header"><h3>Daftar Perhitungan Tersimpan</h3></div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Tanggal</th>
+                        <th>Jumlah Item</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ h.nama_perhitungan }}</strong></td>
+                        <td>{{ h.tanggal.strftime('%d %B %Y %H:%M') }}</td>
+                        <td>{{ h.jumlah_item }} item</td>
+                        <td>
+                            <a href="{{ url_for('main.view_calculation_history', id=h.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Lihat
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center">Belum ada riwayat</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

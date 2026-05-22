@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Item - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Edit Item{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Edit Item: {{ item.nama_item }}</h3>
+        </div>
+        
+        <form method="POST" class="form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kode Item</label>
+                    <input type="text" value="{{ item.kode_item }}" disabled class="disabled">
+                    <small>Kode item tidak dapat diubah</small>
+                </div>
+                <div class="form-group">
+                    <label for="nama_item">Nama Item *</label>
+                    <input type="text" id="nama_item" name="nama_item" value="{{ item.nama_item }}" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="kategori">Kategori *</label>
+                    <select id="kategori" name="kategori" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if item.kategori == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                        <option value="Spare Part" {% if item.kategori == 'Spare Part' %}selected{% endif %}>Spare Part</option>
+                        <option value="Raw Material" {% if item.kategori == 'Raw Material' %}selected{% endif %}>Raw Material</option>
+                        <option value="Consumable" {% if item.kategori == 'Consumable' %}selected{% endif %}>Consumable</option>
+                        <option value="Safety Equipment" {% if item.kategori == 'Safety Equipment' %}selected{% endif %}>Safety Equipment</option>
+                        <option value="Tools" {% if item.kategori == 'Tools' %}selected{% endif %}>Tools</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="unit">Unit</label>
+                    <input type="text" id="unit" name="unit" value="{{ item.unit }}">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="harga">Harga (Rp)</label>
+                    <input type="number" id="harga" name="harga" value="{{ item.harga|int }}" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="lokasi_rak">Lokasi Rak</label>
+                    <input type="text" id="lokasi_rak" name="lokasi_rak" value="{{ item.lokasi_rak or '' }}">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier">Supplier</label>
+                <input type="text" id="supplier" name="supplier" value="{{ item.supplier or '' }}">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update
+                </button>
+                <a href="{{ url_for('main.items') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

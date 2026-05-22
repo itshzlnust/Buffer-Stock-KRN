@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Kriteria - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Kriteria SAW{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <div class="alert {% if total_bobot == 1.0 %}alert-success{% else %}alert-warning{% endif %}">
+                <i class="fas fa-info-circle"></i>
+                Total Bobot: <strong>{{ "%.2f"|format(total_bobot) }}</strong>
+                {% if total_bobot != 1.0 %}(Harus = 1.0){% endif %}
+            </div>
+            <a href="{{ url_for('main.create_criteria') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tambah Kriteria
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Kriteria</th>
+                        <th>Bobot</th>
+                        <th>Tipe</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in criteria_list %}
+                    <tr>
+                        <td><code>{{ c.kode_kriteria }}</code></td>
+                        <td>{{ c.nama_kriteria }}</td>
+                        <td class="text-right"><strong>{{ c.bobot }}</strong></td>
+                        <td>
+                            {% if c.tipe == 'benefit' %}
+                            <span class="badge badge-success">Benefit</span>
+                            {% else %}
+                            <span class="badge badge-danger">Cost</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('main.edit_criteria', id=c.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Tidak ada data kriteria</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Penjelasan</h2>
+    <div class="card">
+        <table class="info-table">
+            <tr>
+                <th>Tipe</th>
+                <th>Penjelasan</th>
+            </tr>
+            <tr>
+                <td><span class="badge badge-success">Benefit</span></td>
+                <td>Semakin tinggi nilai, semakin baik (maksimalisasi)</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-danger">Cost</span></td>
+                <td>Semakin rendah nilai, semakin baik (minimalisasi)</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

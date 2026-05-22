@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_items }}</h3>
+                <p>Total Barang</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ low_stock_count }}</h3>
+                <p>Stok Menipis</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ pending_pr }}</h3>
+                <p>PR Pending</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ approved_pr }}</h3>
+                <p>PR Disetujui</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="section">
+        <h2 class="section-title">Menu Cepat</h2>
+        <div class="quick-actions">
+            <a href="{{ url_for('main.stock') }}" class="action-card">
+                <i class="fas fa-warehouse"></i>
+                <span>Lihat Stok</span>
+            </a>
+            <a href="{{ url_for('main.create_purchase') }}" class="action-card">
+                <i class="fas fa-plus-circle"></i>
+                <span>Pengajuan Pembelian</span>
+            </a>
+            <a href="{{ url_for('main.purchase_list') }}" class="action-card">
+                <i class="fas fa-list"></i>
+                <span>Daftar PR</span>
+            </a>
+            <a href="{{ url_for('main.usage') }}" class="action-card">
+                <i class="fas fa-chart-bar"></i>
+                <span>Laporan Pemakaian</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Low Stock Alert -->
+    <div class="section">
+        <h2 class="section-title">
+            <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
+            Peringatan Stok Menipis
+        </h2>
+        <div class="card">
+            {% if low_stock_items %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Barang</th>
+                            <th>Stok Saat Ini</th>
+                            <th>Safety Stock</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in low_stock_items %}
+                        <tr>
+                            <td><code>{{ item.kode_item }}</code></td>
+                            <td>{{ item.nama_item }}</td>
+                            <td class="text-danger"><strong>{{ item.stock_items[0].quantity if item.stock_items else 0 }}</strong></td>
+                            <td>{{ item.stock_items[0].safety_stock if item.stock_items else 0 }}</td>
+                            <td>
+                                {% if item.stock_items and item.stock_items[0].quantity <= (item.stock_items[0].safety_stock * 0.5) %}
+                                <span class="badge badge-danger">Critical</span>
+                                {% else %}
+                                <span class="badge badge-warning">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('main.create_purchase') }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus"></i> PR
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-check-circle" style="color: var(--success); font-size: 48px;"></i>
+                <p>Semua stok aman</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recent Purchase Requests -->
+    <div class="section">
+        <h2 class="section-title">Pengajuan Pembelian Terbaru</h2>
+        <div class="card">
+            {% if recent_prs %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>No PR</th>
+                            <th>Tanggal</th>
+                            <th>Barang</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pr in recent_prs %}
+                        <tr>
+                            <td><code>{{ pr.no_pengajuan }}</code></td>
+                            <td>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ pr.item.nama_item }}</td>
+                            <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                            <td>
+                                {% if pr.status == 'Pending' %}
+                                <span class="badge badge-warning">Pending</span>
+                                {% elif pr.status == 'Approved' %}
+                                <span class="badge badge-success">Approved</span>
+                                {% elif pr.status == 'Rejected' %}
+                                <span class="badge badge-danger">Rejected</span>
+                                {% else %}
+                                <span class="badge badge-info">Completed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>Belum ada pengajuan pembelian</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Export Section -->
+    <div class="section">
+        <h2 class="section-title">Export Data</h2>
+        <div class="card">
+            <div class="export-buttons">
+                <a href="{{ url_for('main.export_csv', type='items') }}" class="btn btn-success">
+                    <i class="fas fa-file-csv"></i> Export Items
+                </a>
+                <a href="{{ url_for('main.export_csv', type='stock') }}" class="btn btn-primary">
+                    <i class="fas fa-file-csv"></i> Export Stok
+                </a>
+                <a href="{{ url_for('main.export_csv', type='usage') }}" class="btn btn-info">
+                    <i class="fas fa-file-csv"></i> Export Pemakaian
+                </a>
+                <a href="{{ url_for('main.export_csv', type='purchase') }}" class="btn btn-warning">
+                    <i class="fas fa-file-csv"></i> Export PR
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

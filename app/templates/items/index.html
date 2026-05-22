@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Item - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Data Item{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <div class="filter-section">
+                <form method="GET" class="filter-form">
+                    <input type="text" name="search" placeholder="Cari item..." value="{{ request.args.get('search', '') }}">
+                    <select name="kategori">
+                        <option value="">Semua Kategori</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if request.args.get('kategori') == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('main.items') }}" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </form>
+                <a href="{{ url_for('main.create_item') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Tambah Item
+                </a>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Item</th>
+                        <th>Kategori</th>
+                        <th>Unit</th>
+                        <th>Harga</th>
+                        <th>Lokasi</th>
+                        <th>Supplier</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items.items %}
+                    <tr>
+                        <td><code>{{ item.kode_item }}</code></td>
+                        <td>{{ item.nama_item }}</td>
+                        <td><span class="badge">{{ item.kategori }}</span></td>
+                        <td>{{ item.unit }}</td>
+                        <td class="text-right">Rp {{ "{:,.0f}".format(item.harga) }}</td>
+                        <td>{{ item.lokasi_rak or '-' }}</td>
+                        <td>{{ item.supplier or '-' }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('main.edit_item', id=item.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('main.delete_item', id=item.id) }}" class="inline-form" onsubmit="return confirm('Yakin ingin menghapus item ini?')">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">Tidak ada data</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if items.pages > 1 %}
+        <div class="pagination">
+            {% if items.has_prev %}
+            <a href="{{ url_for('main.items', page=items.prev_num, search=request.args.get('search'), kategori=request.args.get('kategori')) }}" class="btn btn-sm">
+                <i class="fas fa-chevron-left"></i> Prev
+            </a>
+            {% endif %}
+            
+            <span class="page-info">Halaman {{ items.page }} dari {{ items.pages }}</span>
+            
+            {% if items.has_next %}
+            <a href="{{ url_for('main.items', page=items.next_num, search=request.args.get('search'), kategori=request.args.get('kategori')) }}" class="btn btn-sm">
+                Next <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

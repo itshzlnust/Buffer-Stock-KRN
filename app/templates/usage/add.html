@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Tambah Pemakaian - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Tambah Data Pemakaian{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card" style="max-width: 600px;">
+        <div class="card-header">
+            <h3>Form Input Pemakaian Barang</h3>
+        </div>
+        
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label for="item_id">Barang *</label>
+                <select id="item_id" name="item_id" required>
+                    <option value="">Pilih Barang</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}">{{ item.kode_item }} - {{ item.nama_item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tahun">Tahun *</label>
+                    <input type="number" id="tahun" name="tahun" value="{{ current_year }}" min="2020" max="2030" required>
+                </div>
+                <div class="form-group">
+                    <label for="bulan">Bulan *</label>
+                    <select id="bulan" name="bulan" required>
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Maret</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Juni</option>
+                        <option value="7">Juli</option>
+                        <option value="8">Agustus</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="quantity">Jumlah Pemakaian *</label>
+                <input type="number" id="quantity" name="quantity" min="0" step="0.01" required placeholder="0">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+                <a href="{{ url_for('main.usage') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

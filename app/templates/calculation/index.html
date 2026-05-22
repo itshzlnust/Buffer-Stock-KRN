@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Perhitungan SAW - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Hasil Perhitungan SAW{% endblock %}
+
+{% block content %}
+{% if results %}
+<div class="section">
+    <h2 class="section-title">Ringkasan</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-box"></i></div>
+            <div class="stat-info"><h3>{{ results.summary.total_items }}</h3><p>Total Item</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-list-check"></i></div>
+            <div class="stat-info"><h3>{{ results.summary.total_criteria }}</h3><p>Kriteria</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-trophy"></i></div>
+            <div class="stat-info"><h3>{{ "%.4f"|format(results.summary.highest_score) }}</h3><p>Skor Tertinggi</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-info"><h3>{{ "%.4f"|format(results.summary.average_score) }}</h3><p>Skor Rata-rata</p></div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Bobot Kriteria</h2>
+    <div class="card">
+        <div class="criteria-weights">
+            {% for c in results.criteria %}
+            <div class="weight-item">
+                <span class="weight-code">{{ c.kode }}</span>
+                <span class="weight-name">{{ c.nama }}</span>
+                <span class="badge {% if c.tipe == 'benefit' %}badge-success{% else %}badge-danger{% endif %}">{{ c.tipe }}</span>
+                <span class="weight-value">{{ c.bobot }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Ranking Item</h2>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table ranking-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Kode Item</th>
+                        <th>Nama Item</th>
+                        <th>Kategori</th>
+                        <th>Skor SAW</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in results.rankings %}
+                    <tr class="{% if r.rank <= 10 %}top-rank{% endif %}">
+                        <td>
+                            <span class="rank-badge rank-{{ r.rank if r.rank <= 3 else 'other' }}">{{ r.rank }}</span>
+                        </td>
+                        <td><code>{{ r.kode_item }}</code></td>
+                        <td>{{ r.nama_item }}</td>
+                        <td><span class="badge">{{ r.kategori }}</span></td>
+                        <td class="score-cell">
+                            <strong>{{ "%.4f"|format(r.score) }}</strong>
+                        </td>
+                        <td>
+                            {% if r.rank <= 10 %}
+                            <span class="badge badge-priority">Prioritas</span>
+                            {% else %}
+                            <span class="badge badge-normal">Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="card">
+        <div class="card-footer">
+            <a href="{{ url_for('main.buffer_recommendation') }}" class="btn btn-primary">
+                <i class="fas fa-clipboard-check"></i> Lihat Rekomendasi Buffer
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

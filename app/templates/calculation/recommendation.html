@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Rekomendasi Buffer - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Rekomendasi Buffer Stock{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Prioritas Buffer Stock Berdasarkan SAW</h3>
+            <form method="GET" class="form-inline">
+                <label>Tampilkan:</label>
+                <select name="top" onchange="this.form.submit()">
+                    <option value="5" {% if top_n == 5 %}selected{% endif %}>Top 5</option>
+                    <option value="10" {% if top_n == 10 %}selected{% endif %}>Top 10</option>
+                    <option value="20" {% if top_n == 20 %}selected{% endif %}>Top 20</option>
+                    <option value="50" {% if top_n == 50 %}selected{% endif %}>Semua</option>
+                </select>
+            </form>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table recommendation-table">
+                <thead>
+                    <tr>
+                        <th>Prioritas</th>
+                        <th>Kode Item</th>
+                        <th>Nama Item</th>
+                        <th>Kategori</th>
+                        <th>Skor SAW</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in recommendations %}
+                    <tr>
+                        <td>
+                            <span class="rank-badge rank-{{ rec.rank if rec.rank <= 3 else 'other' }}">{{ rec.rank }}</span>
+                        </td>
+                        <td><code>{{ rec.kode_item }}</code></td>
+                        <td><strong>{{ rec.nama_item }}</strong></td>
+                        <td><span class="badge">{{ rec.kategori }}</span></td>
+                        <td>{{ "%.4f"|format(rec.score) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

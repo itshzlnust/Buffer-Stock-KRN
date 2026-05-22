@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Nilai Kriteria - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Nilai Kriteria{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Input Nilai Kriteria untuk Semua Item</h3>
+            <form method="POST" action="{{ url_for('main.bulk_update_criteria_values') }}" class="header-form">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Simpan Semua
+                </button>
+            </form>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table matrix-table">
+                <thead>
+                    <tr>
+                        <th>Kode Item</th>
+                        <th>Nama Item</th>
+                        {% for c in criteria_list %}
+                        <th class="criteria-col">
+                            <div class="criteria-header">
+                                <span class="criteria-code">{{ c.kode_kriteria }}</span>
+                                <small class="criteria-name">{{ c.nama_kriteria[:20] }}{% if c.nama_kriteria|length > 20 %}...{% endif %}</small>
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><code>{{ item.kode_item }}</code></td>
+                        <td>{{ item.nama_item[:25] }}{% if item.nama_item|length > 25 %}...{% endif %}</td>
+                        {% for c in criteria_list %}
+                        <td>
+                            <input type="number" 
+                                   name="val_{{ item.id }}_{{ c.id }}" 
+                                   value="{{ value_matrix[item.id][c.id] }}" 
+                                   class="input-small"
+                                   step="0.01">
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

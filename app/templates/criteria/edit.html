@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Kriteria - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Edit Kriteria{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Edit Kriteria: {{ criteria.nama_kriteria }}</h3>
+        </div>
+        
+        <form method="POST" class="form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kode Kriteria</label>
+                    <input type="text" value="{{ criteria.kode_kriteria }}" disabled class="disabled">
+                </div>
+                <div class="form-group">
+                    <label for="nama_kriteria">Nama Kriteria *</label>
+                    <input type="text" id="nama_kriteria" name="nama_kriteria" value="{{ criteria.nama_kriteria }}" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bobot">Bobot *</label>
+                    <input type="number" id="bobot" name="bobot" step="0.01" min="0" max="1" value="{{ criteria.bobot }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="tipe">Tipe *</label>
+                    <select id="tipe" name="tipe" required>
+                        <option value="benefit" {% if criteria.tipe == 'benefit' %}selected{% endif %}>Benefit</option>
+                        <option value="cost" {% if criteria.tipe == 'cost' %}selected{% endif %}>Cost</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="keterangan">Keterangan</label>
+                <textarea id="keterangan" name="keterangan" rows="3">{{ criteria.keterangan or '' }}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update
+                </button>
+                <a href="{{ url_for('main.criteria') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

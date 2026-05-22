@@ -1,0 +1,4 @@
+Starting Sistem Buffer Stock
+Access: http://localhost:5000
+ * Serving Flask app 'app'
+ * Debug mode: on

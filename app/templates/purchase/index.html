@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Pengajuan Pembelian - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Pengajuan Pembelian{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Daftar Pengajuan Pembelian (PR)</h3>
+            <div class="header-actions">
+                <a href="{{ url_for('main.create_purchase') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Buat PR Baru
+                </a>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>No. PR</th>
+                        <th>Tanggal</th>
+                        <th>Barang</th>
+                        <th>Qty Diminta</th>
+                        <th>Alasan</th>
+                        <th>Status</th>
+                        <th>Disetujui Oleh</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pr in prs.items %}
+                    <tr>
+                        <td><code>{{ pr.no_pengajuan }}</code></td>
+                        <td>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <strong>{{ pr.item.nama_item }}</strong><br>
+                            <small class="text-muted">{{ pr.item.kode_item }}</small>
+                        </td>
+                        <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                        <td>{{ pr.alasan_pengajuan[:50] }}{% if pr.alasan_pengajuan|length > 50 %}...{% endif %}</td>
+                        <td>
+                            {% if pr.status == 'Pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% elif pr.status == 'Approved' %}
+                            <span class="badge badge-success">Approved</span>
+                            {% elif pr.status == 'Rejected' %}
+                            <span class="badge badge-danger">Rejected</span>
+                            {% else %}
+                            <span class="badge badge-info">Completed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pr.approved_by or '-' }}</td>
+                        <td>
+                            {% if pr.status == 'Pending' %}
+                            <form method="POST" action="{{ url_for('main.approve_purchase', id=pr.id) }}" class="action-form" style="display:inline;">
+                                <input type="hidden" name="action" value="approve">
+                                <input type="hidden" name="approved_by" value="Admin">
+                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('main.approve_purchase', id=pr.id) }}" class="action-form" style="display:inline;" onsubmit="return confirm('Tolak pengajuan ini?')">
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Reject">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                            {% elif pr.status == 'Approved' %}
+                            <form method="POST" action="{{ url_for('main.approve_purchase', id=pr.id) }}" class="action-form" style="display:inline;">
+                                <input type="hidden" name="action" value="complete">
+                                <button type="submit" class="btn btn-sm btn-primary" title="Selesai">
+                                    <i class="fas fa-check-double"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

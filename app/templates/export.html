@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Export Data - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Export Data{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Download Data dalam Format CSV</h3>
+        </div>
+        <div class="export-buttons">
+            <a href="{{ url_for('main.export_csv', type='items') }}" class="btn btn-success">
+                <i class="fas fa-file-csv"></i> Export Data Barang
+            </a>
+            <a href="{{ url_for('main.export_csv', type='stock') }}" class="btn btn-primary">
+                <i class="fas fa-file-csv"></i> Export Stok Barang
+            </a>
+            <a href="{{ url_for('main.export_csv', type='usage') }}" class="btn btn-info">
+                <i class="fas fa-file-csv"></i> Export Pemakaian
+            </a>
+            <a href="{{ url_for('main.export_csv', type='purchase') }}" class="btn btn-warning">
+                <i class="fas fa-file-csv"></i> Export Pengajuan Pembelian
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Penjelasan Kolom CSV</h2>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Kolom</th>
+                        <th>Deskripsi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>items.csv</code></td>
+                        <td>Kode, Nama, Kategori, Unit, Harga, Supplier, Lokasi</td>
+                        <td>Data master semua barang di gudang</td>
+                    </tr>
+                    <tr>
+                        <td><code>stock.csv</code></td>
+                        <td>Kode, Nama, Kategori, Unit, Stok, Safety Stock, Reorder Point, Status</td>
+                        <td>Status stok setiap barang</td>
+                    </tr>
+                    <tr>
+                        <td><code>usage.csv</code></td>
+                        <td>Kode Item, Nama Item, Tahun, Bulan, Jumlah Pemakaian</td>
+                        <td>Data pemakaian barang per bulan</td>
+                    </tr>
+                    <tr>
+                        <td><code>purchase.csv</code></td>
+                        <td>No PR, Tanggal, Barang, Qty, Status, Disetujui Oleh</td>
+                        <td>Data semua pengajuan pembelian</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

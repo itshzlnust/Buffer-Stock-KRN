@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Buat Pengajuan Pembelian - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Pengajuan Pembelian Baru{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card" style="max-width: 700px;">
+        <div class="card-header">
+            <h3>Form Pengajuan Pembelian Barang (eLTO)</h3>
+        </div>
+        
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label for="item_id">Pilih Barang *</label>
+                <select id="item_id" name="item_id" required>
+                    <option value="">Pilih Barang</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}">
+                        {{ item.kode_item }} - {{ item.nama_item }} 
+                        (Stok: {{ item.stock_items[0].quantity if item.stock_items else 0 }} {{ item.unit }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="quantity">Jumlah Diminta *</label>
+                    <input type="number" id="quantity" name="quantity" min="1" required placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" id="unit_display" disabled placeholder="-">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="alasan_pengajuan">Alasan Pengajuan *</label>
+                <textarea id="alasan_pengajuan" name="alasan_pengajuan" rows="3" required placeholder="Jelaskan alasan pengajuan pembelian..."></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i> Kirim Pengajuan
+                </button>
+                <a href="{{ url_for('main.purchase_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('item_id').addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    const unit = option.text.split('(')[1]?.split(')')[0]?.split(':')[1]?.trim() || '-';
+    document.getElementById('unit_display').value = unit;
+});
+</script>
+{% endblock %}
