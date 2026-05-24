@@ -82,7 +82,6 @@ def create_item():
         nama = request.form.get('nama_item')
         kategori = request.form.get('kategori')
         unit = request.form.get('unit', 'PCS')
-        harga = request.form.get('harga', 0)
         supplier = request.form.get('supplier')
         lokasi = request.form.get('lokasi_rak')
         
@@ -96,7 +95,7 @@ def create_item():
             nama_item=nama,
             kategori=kategori,
             unit=unit,
-            harga=float(harga) if harga else 0,
+            harga=0,
             supplier=supplier,
             lokasi_rak=lokasi
         )
@@ -125,7 +124,6 @@ def edit_item(id):
         item.nama_item = request.form.get('nama_item')
         item.kategori = request.form.get('kategori')
         item.unit = request.form.get('unit')
-        item.harga = float(request.form.get('harga', 0))
         item.supplier = request.form.get('supplier')
         item.lokasi_rak = request.form.get('lokasi_rak')
         
@@ -511,9 +509,9 @@ def export_csv(type):
         items = Item.query.all()
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(['Kode', 'Nama', 'Kategori', 'Unit', 'Harga', 'Supplier', 'Lokasi Rak'])
+        writer.writerow(['Kode', 'Nama', 'Kategori', 'Unit', 'Supplier', 'Lokasi Rak'])
         for item in items:
-            writer.writerow([item.kode_item, item.nama_item, item.kategori, item.unit, item.harga, item.supplier or '', item.lokasi_rak or ''])
+            writer.writerow([item.kode_item, item.nama_item, item.kategori, item.unit, item.supplier or '', item.lokasi_rak or ''])
         filename = f'items_{datetime.now().strftime("%Y%m%d")}.csv'
     
     elif type == 'stock':
@@ -577,7 +575,6 @@ def api_items():
         'nama_item': i.nama_item,
         'kategori': i.kategori,
         'unit': i.unit,
-        'harga': i.harga,
         'supplier': i.supplier,
         'lokasi_rak': i.lokasi_rak
     } for i in items])

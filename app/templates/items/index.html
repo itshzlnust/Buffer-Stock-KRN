@@ -37,7 +37,6 @@
                         <th>Nama Item</th>
                         <th>Kategori</th>
                         <th>Unit</th>
-                        <th>Harga</th>
                         <th>Lokasi</th>
                         <th>Supplier</th>
                         <th>Aksi</th>
@@ -50,7 +49,6 @@
                         <td>{{ item.nama_item }}</td>
                         <td><span class="badge">{{ item.kategori }}</span></td>
                         <td>{{ item.unit }}</td>
-                        <td class="text-right">Rp {{ "{:,.0f}".format(item.harga) }}</td>
                         <td>{{ item.lokasi_rak or '-' }}</td>
                         <td>{{ item.supplier or '-' }}</td>
                         <td>
@@ -68,7 +66,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="8" class="text-center">Tidak ada data</td>
+                        <td colspan="7" class="text-center">Tidak ada data</td>
                     </tr>
                     {% endfor %}
                 </tbody>

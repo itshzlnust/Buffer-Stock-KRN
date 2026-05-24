@@ -48,6 +48,16 @@ CATEGORY_CRITICALITY = {
     'PoE Injector': 8,
 }
 
+BRAND_CANDIDATES = [
+    'WESTERN DIGITAL', 'TP-LINK', 'HIKVISION', 'SEAGATE', 'PANDUIT', 'LOGITECH', 'EPSON',
+    'CISCO', 'HPE', 'HP', 'DELL', 'SAMSUNG', 'CANON', 'APC', 'UGREEN', 'BAFO', 'YEALINK',
+    'FARGO', 'AUTODESK', 'OMADA', 'KINGSTON', 'VGEN', 'NETVIEL', 'PANASONIC', '3M',
+    'NACHI', 'JOYKO', 'ZOLA', 'VENTION', 'CORSAIR', 'ENLIGHT', 'UTICON', 'TENDA',
+    'BROCO', 'PHILIPS', 'COMMSCOPE', 'TP LINK', 'TPLINK', 'WD', 'NISO', 'MASKO',
+    'ENERGIZER', 'ALKALINE', 'MIFA', 'JACK', 'RJ45', 'FANCO', 'INFORCE', 'NETLINE',
+    'KEYBOARD', 'MOUSE', 'MONITOR', 'REMOTE'
+]
+
 
 def _to_number(value):
     if value is None:
@@ -83,6 +93,16 @@ def _discover_csv_path(filename):
         if candidate.exists():
             return candidate
     raise FileNotFoundError(f'File CSV tidak ditemukan: {filename}')
+
+
+def _extract_supplier(*texts):
+    combined = ' '.join(text for text in texts if text).upper()
+    for candidate in BRAND_CANDIDATES:
+        if candidate in combined:
+            if candidate in ('WD', 'TPLINK', 'TP LINK'):
+                return 'WESTERN DIGITAL' if candidate == 'WD' else 'TP-LINK'
+            return candidate
+    return '-'
 
 
 def load_report_data(report_path):
@@ -130,6 +150,7 @@ def load_transaction_data(in_out_path):
     grouped = defaultdict(list)
     monthly_in = defaultdict(float)
     monthly_out = defaultdict(float)
+    remarks_by_key = defaultdict(set)
 
     with in_out_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
         reader = csv.reader(file_obj)
@@ -148,6 +169,7 @@ def load_transaction_data(in_out_path):
             jenis_trans = (row[2] or '').strip().upper()
             qty = _to_number(row[9])
             trans_date = _parse_date(row[1])
+            remarks = (row[10] or '').strip()
 
             if not kategori or not nama_item or in_out not in ('IN', 'OUT'):
                 continue
@@ -160,7 +182,10 @@ def load_transaction_data(in_out_path):
                 'jenis_trans': jenis_trans,
                 'in_out': in_out,
                 'qty': qty,
+                'remarks': remarks,
             })
+            if remarks:
+                remarks_by_key[key].add(remarks)
 
             ym_key = (key, trans_date.year, trans_date.month)
             if in_out == 'IN':
@@ -168,7 +193,7 @@ def load_transaction_data(in_out_path):
             else:
                 monthly_out[ym_key] += qty
 
-    return grouped, monthly_in, monthly_out
+    return grouped, monthly_in, monthly_out, remarks_by_key
 
 
 def build_metrics(report_records, transactions, monthly_in, monthly_out):
@@ -221,7 +246,7 @@ def seed_data():
     in_out_csv = _discover_csv_path('IT_Warehouse_2025 - Copy.xlsx - IN_OUT.csv')
 
     report_records = load_report_data(report_csv)
-    transactions, monthly_in, monthly_out = load_transaction_data(in_out_csv)
+    transactions, monthly_in, monthly_out, remarks_by_key = load_transaction_data(in_out_csv)
     metrics, month_keys = build_metrics(report_records, transactions, monthly_in, monthly_out)
 
     with app.app_context():
@@ -286,13 +311,17 @@ def seed_data():
         sorted_records = sorted(report_records, key=lambda x: (x['kategori'].lower(), x['nama_item'].lower()))
         item_by_key = {}
         for idx, rec in enumerate(sorted_records, start=1):
+            supplier_name = _extract_supplier(
+                rec['nama_item'],
+                ' '.join(sorted(remarks_by_key.get(rec['key'], [])))
+            )
             item = Item(
                 kode_item=f'ITM-{idx:04d}',
                 nama_item=rec['nama_item'],
                 kategori=rec['kategori'],
                 unit='PCS',
                 harga=0.0,
-                supplier='Data Import CSV',
+                supplier=supplier_name,
                 lokasi_rak=rec['dominant_location'] or '-',
             )
             db.session.add(item)
