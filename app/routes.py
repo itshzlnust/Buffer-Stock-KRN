@@ -355,9 +355,9 @@ def stock():
 @main_bp.route('/stock/update', methods=['POST'])
 def update_stock():
     item_id = request.form.get('item_id', type=int)
-    quantity = request.form.get('quantity', 0, type=float)
-    safety_stock = request.form.get('safety_stock', 0, type=float)
-    reorder_point = request.form.get('reorder_point', 0, type=float)
+    quantity = request.form.get('quantity', 0, type=int)
+    safety_stock = request.form.get('safety_stock', 0, type=int)
+    reorder_point = request.form.get('reorder_point', 0, type=int)
     
     if not item_id:
         flash('Item tidak ditemukan!', 'error')
@@ -365,11 +365,11 @@ def update_stock():
     
     stock = Stock.query.filter_by(item_id=item_id).first()
     if stock:
-        stock.quantity = quantity
-        stock.safety_stock = safety_stock
-        stock.reorder_point = reorder_point
+        stock.quantity = int(quantity)
+        stock.safety_stock = int(safety_stock)
+        stock.reorder_point = int(reorder_point)
     else:
-        stock = Stock(item_id=item_id, quantity=quantity, safety_stock=safety_stock, reorder_point=reorder_point)
+        stock = Stock(item_id=item_id, quantity=int(quantity), safety_stock=int(safety_stock), reorder_point=int(reorder_point))
         db.session.add(stock)
     
     db.session.commit()
@@ -408,13 +408,13 @@ def add_usage():
         item_id = request.form.get('item_id', type=int)
         tahun = request.form.get('tahun', type=int)
         bulan = request.form.get('bulan', type=int)
-        quantity = request.form.get('quantity', 0, type=float)
+        quantity = request.form.get('quantity', 0, type=int)
         
         if not item_id:
             flash('Item harus diisi!', 'error')
             return redirect(url_for('main.add_usage'))
         
-        usage = Usage(item_id=item_id, tahun=tahun, bulan=bulan, quantity_used=quantity)
+        usage = Usage(item_id=item_id, tahun=tahun, bulan=bulan, quantity_used=int(quantity))
         db.session.add(usage)
         db.session.commit()
         
@@ -452,7 +452,7 @@ def purchase_history():
 def create_purchase():
     if request.method == 'POST':
         item_id = request.form.get('item_id', type=int)
-        quantity = request.form.get('quantity', 0, type=float)
+        quantity = request.form.get('quantity', 0, type=int)
         alasan = request.form.get('alasan_pengajuan')
         
         if not item_id:
@@ -470,7 +470,7 @@ def create_purchase():
         pr = PurchaseRequest(
             no_pengajuan=pr_number,
             item_id=item_id,
-            quantity_requested=quantity,
+            quantity_requested=int(quantity),
             alasan_pengajuan=alasan
         )
         db.session.add(pr)
@@ -522,9 +522,9 @@ def export_csv(type):
         writer.writerow(['Kode', 'Nama Item', 'Kategori', 'Unit', 'Stok Saat Ini', 'Safety Stock', 'Reorder Point', 'Status'])
         for item in data:
             stock = item.stock_items[0] if item.stock_items else None
-            qty = stock.quantity if stock else 0
-            safety = stock.safety_stock if stock else 0
-            reorder = stock.reorder_point if stock else 0
+            qty = int(stock.quantity) if stock else 0
+            safety = int(stock.safety_stock) if stock else 0
+            reorder = int(stock.reorder_point) if stock else 0
             status = 'Low Stock' if qty <= safety else ('Reorder' if qty <= reorder else 'Normal')
             writer.writerow([item.kode_item, item.nama_item, item.kategori, item.unit, qty, safety, reorder, status])
         filename = f'stock_{datetime.now().strftime("%Y%m%d")}.csv'
@@ -536,7 +536,7 @@ def export_csv(type):
         writer = csv.writer(output)
         writer.writerow(['Kode Item', 'Nama Item', 'Tahun', 'Bulan', 'Jumlah Pemakaian'])
         for usage, item in usages:
-            writer.writerow([item.kode_item, item.nama_item, usage.tahun, usage.bulan, usage.quantity_used])
+            writer.writerow([item.kode_item, item.nama_item, usage.tahun, usage.bulan, int(usage.quantity_used)])
         filename = f'usage_{year}_{datetime.now().strftime("%Y%m%d")}.csv'
     
     elif type == 'purchase':
@@ -545,7 +545,7 @@ def export_csv(type):
         writer = csv.writer(output)
         writer.writerow(['No PR', 'Tanggal', 'Kode Item', 'Nama Item', 'Qty Diminta', 'Status', 'Disetujui Oleh'])
         for pr in prs:
-            writer.writerow([pr.no_pengajuan, pr.tanggal_pengajuan.strftime('%Y-%m-%d'), pr.item.kode_item, pr.item.nama_item, pr.quantity_requested, pr.status, pr.approved_by or ''])
+            writer.writerow([pr.no_pengajuan, pr.tanggal_pengajuan.strftime('%Y-%m-%d'), pr.item.kode_item, pr.item.nama_item, int(pr.quantity_requested), pr.status, pr.approved_by or ''])
         filename = f'purchase_{datetime.now().strftime("%Y%m%d")}.csv'
     
     else:

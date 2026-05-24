@@ -97,7 +97,7 @@
                             <td><code>{{ item.kode_item }}</code></td>
                             <td>{{ item.nama_item }}</td>
                             <td class="text-danger"><strong>{{ item.stock_items[0].quantity if item.stock_items else 0 }}</strong></td>
-                            <td>{{ item.stock_items[0].safety_stock if item.stock_items else 0 }}</td>
+                            <td>{{ item.stock_items[0].safety_stock|int if item.stock_items else 0 }}</td>
                             <td>
                                 {% if item.stock_items and item.stock_items[0].quantity <= (item.stock_items[0].safety_stock * 0.5) %}
                                 <span class="badge badge-danger">Critical</span>
@@ -146,7 +146,7 @@
                             <td><code>{{ pr.no_pengajuan }}</code></td>
                             <td>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</td>
                             <td>{{ pr.item.nama_item }}</td>
-                            <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                            <td>{{ pr.quantity_requested|int }} {{ pr.item.unit }}</td>
                             <td>
                                 {% if pr.status == 'Pending' %}
                                 <span class="badge badge-warning">Pending</span>

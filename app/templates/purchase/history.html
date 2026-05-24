@@ -37,7 +37,7 @@
                         <td><code>{{ pr.no_pengajuan }}</code></td>
                         <td>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</td>
                         <td>{{ pr.item.nama_item }}</td>
-                        <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                        <td>{{ pr.quantity_requested|int }} {{ pr.item.unit }}</td>
                         <td>{{ pr.alasan_pengajuan[:50] }}{% if pr.alasan_pengajuan|length > 50 %}...{% endif %}</td>
                         <td>
                             {% if pr.status == 'Pending' %}

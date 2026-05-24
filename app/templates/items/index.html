@@ -51,7 +51,7 @@
                         {% set stock = item.stock_items[0] if item.stock_items else none %}
                         <td>
                             {% if stock %}
-                            <strong>{{ stock.quantity }}</strong> unit
+                            <strong>{{ stock.quantity|int }}</strong> unit
                             {% else %}
                             <span class="text-muted">0 unit</span>
                             {% endif %}

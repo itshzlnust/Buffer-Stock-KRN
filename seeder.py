@@ -232,11 +232,11 @@ def build_metrics(report_records, transactions, monthly_in, monthly_out):
         criticality = float(CATEGORY_CRITICALITY.get(rec['kategori'], 6))
 
         metrics[key] = {
-            'avg_demand': round(avg_demand, 2),
-            'lead_time': round(lead_time, 2),
-            'item_cost_proxy': item_cost_proxy,
-            'stock_out_frequency': float(stock_out_frequency),
-            'criticality': criticality,
+            'avg_demand': int(round(avg_demand)),
+            'lead_time': int(round(lead_time)),
+            'item_cost_proxy': int(round(item_cost_proxy)),
+            'stock_out_frequency': int(stock_out_frequency),
+            'criticality': int(round(criticality)),
         }
 
     return metrics, month_keys
@@ -349,11 +349,11 @@ def seed_data(force=False):
                 'criticality': 6.0,
             })
 
-            safety_stock = max(1.0, round(metric['avg_demand'] * 0.5, 2))
-            reorder_point = max(safety_stock + 1.0, round(metric['avg_demand'] * 1.2, 2))
+            safety_stock = max(1, int(round(metric['avg_demand'] * 0.5)))
+            reorder_point = max(safety_stock + 1, int(round(metric['avg_demand'] * 1.2)))
             stock = Stock(
                 item_id=item.id,
-                quantity=rec['total_qty'],
+                quantity=int(round(rec['total_qty'])),
                 safety_stock=safety_stock,
                 reorder_point=reorder_point,
             )
@@ -379,7 +379,7 @@ def seed_data(force=False):
                     per_item_monthly_out[(year, month)] += out_qty
 
             for (year, month), out_qty in per_item_monthly_out.items():
-                usage = Usage(item_id=item.id, tahun=year, bulan=month, quantity_used=out_qty)
+                usage = Usage(item_id=item.id, tahun=year, bulan=month, quantity_used=int(round(out_qty)))
                 db.session.add(usage)
                 usage_rows += 1
 
@@ -391,7 +391,7 @@ def seed_data(force=False):
             if not incoming:
                 continue
 
-            qty_requested = round(sum(t['qty'] for t in incoming), 2)
+            qty_requested = int(round(sum(t['qty'] for t in incoming)))
             if qty_requested <= 0:
                 continue
 

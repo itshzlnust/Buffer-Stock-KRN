@@ -48,13 +48,13 @@
                         <td>{{ item.unit }}</td>
                         <td>
                             {% if stock %}
-                            <strong>{{ stock.quantity }}</strong>
+                            <strong>{{ stock.quantity|int }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>{{ stock.safety_stock if stock else '-' }}</td>
-                        <td>{{ stock.reorder_point if stock else '-' }}</td>
+                        <td>{{ stock.safety_stock|int if stock else '-' }}</td>
+                        <td>{{ stock.reorder_point|int if stock else '-' }}</td>
                         <td>
                             {% if stock %}
                                 {% if stock.quantity <= stock.safety_stock %}
@@ -69,7 +69,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-primary" onclick="editStock({{ item.id }}, '{{ item.kode_item }}', '{{ item.nama_item }}', {{ stock.quantity if stock else 0 }}, {{ stock.safety_stock if stock else 0 }}, {{ stock.reorder_point if stock else 0 }})">
+                            <button class="btn btn-sm btn-primary" onclick="editStock({{ item.id }}, '{{ item.kode_item }}', '{{ item.nama_item }}', {{ stock.quantity|int if stock else 0 }}, {{ stock.safety_stock|int if stock else 0 }}, {{ stock.reorder_point|int if stock else 0 }})">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </td>
@@ -92,15 +92,15 @@
             <input type="hidden" name="item_id" id="modalItemId">
             <div class="form-group">
                 <label>Stok Saat Ini</label>
-                <input type="number" name="quantity" id="modalQuantity" required min="0">
+                <input type="number" name="quantity" id="modalQuantity" required min="0" step="1">
             </div>
             <div class="form-group">
                 <label>Safety Stock</label>
-                <input type="number" name="safety_stock" id="modalSafety" required min="0">
+                <input type="number" name="safety_stock" id="modalSafety" required min="0" step="1">
             </div>
             <div class="form-group">
                 <label>Reorder Point</label>
-                <input type="number" name="reorder_point" id="modalReorder" required min="0">
+                <input type="number" name="reorder_point" id="modalReorder" required min="0" step="1">
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update</button>

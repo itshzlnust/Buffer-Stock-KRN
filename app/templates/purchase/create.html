@@ -18,7 +18,7 @@
                     {% for item in items %}
                     <option value="{{ item.id }}">
                         {{ item.kode_item }} - {{ item.nama_item }} 
-                        (Stok: {{ item.stock_items[0].quantity if item.stock_items else 0 }} {{ item.unit }})
+                        (Stok: {{ item.stock_items[0].quantity|int if item.stock_items else 0 }} {{ item.unit }})
                     </option>
                     {% endfor %}
                 </select>

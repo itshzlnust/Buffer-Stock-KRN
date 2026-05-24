@@ -38,7 +38,7 @@
                             <strong>{{ pr.item.nama_item }}</strong><br>
                             <small class="text-muted">{{ pr.item.kode_item }}</small>
                         </td>
-                        <td>{{ pr.quantity_requested }} {{ pr.item.unit }}</td>
+                        <td>{{ pr.quantity_requested|int }} {{ pr.item.unit }}</td>
                         <td>{{ pr.alasan_pengajuan[:50] }}{% if pr.alasan_pengajuan|length > 50 %}...{% endif %}</td>
                         <td>
                             {% if pr.status == 'Pending' %}

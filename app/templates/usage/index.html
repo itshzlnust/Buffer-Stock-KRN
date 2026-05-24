@@ -82,7 +82,7 @@
                     <tr>
                         <td>{{ usage.bulan }}/{{ usage.tahun }}</td>
                         <td>{{ usage.item.nama_item }}</td>
-                        <td>{{ usage.quantity_used }} {{ usage.item.unit }}</td>
+                        <td>{{ usage.quantity_used|int }} {{ usage.item.unit }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
