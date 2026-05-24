@@ -133,7 +133,7 @@ def _build_purchase_reason(item):
     if 'keyboard' in kategori or 'mouse' in kategori or 'ip-phone' in kategori or 'phone' in kategori or 'video conference' in kategori:
         return 'Perangkat kerja ini perlu disediakan sebagai cadangan agar operasional pengguna tetap berjalan saat ada unit yang rusak atau habis pakai.'
 
-    return 'Pengajuan otomatis hasil sinkronisasi transaksi gudang untuk menjaga ketersediaan stok operasional.'
+    return f'Pengadaan {item.nama_item} diperlukan untuk menjaga ketersediaan stok dan kelancaran operasional.'
 
 
 def load_report_data(report_path):
