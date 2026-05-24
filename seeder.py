@@ -106,6 +106,36 @@ def _extract_supplier(*texts):
     return '-'
 
 
+def _build_purchase_reason(item):
+    nama = item.nama_item.lower()
+    kategori = item.kategori.lower()
+
+    if 'hdd server' in kategori:
+        if 'baru' in nama:
+            return 'Kapasitas penyimpanan server sudah mulai penuh sehingga perlu penambahan unit baru untuk menjaga performa dan backup data.'
+        return 'HDD server lama sudah mulai aus atau penuh sehingga perlu penggantian agar penyimpanan dan operasional server tetap stabil.'
+
+    if 'printer cartridge' in kategori or 'printer ink' in kategori:
+        return 'Persediaan consumable printer menipis dan perlu diganti agar aktivitas cetak harian tidak terhenti.'
+
+    if 'network cable' in kategori or 'patch cord' in kategori or 'jack module' in kategori or 'face plate' in kategori or 'rj45' in kategori:
+        return 'Kebutuhan instalasi dan perawatan jaringan meningkat sehingga perlu stok cadangan untuk pekerjaan lapangan.'
+
+    if 'switch' in kategori or 'poe switch' in kategori or 'router' in kategori or 'poe injector' in kategori or 'media converter' in kategori or 'nvr' in kategori or 'network camera' in kategori:
+        return 'Perangkat jaringan dan keamanan perlu stok cadangan untuk mendukung ekspansi, maintenance, dan penggantian unit bermasalah.'
+
+    if 'ups' in kategori or 'power supply' in kategori or 'stop kontak' in kategori:
+        return 'Perangkat pendukung daya perlu disiapkan sebagai cadangan untuk menjaga kontinuitas operasional perangkat kerja.'
+
+    if 'memory' in kategori or 'ssd' in kategori or 'hdd' in kategori or 'mini pc' in kategori or 'pc' in kategori or 'monitor' in kategori:
+        return 'Perangkat kerja ini dibutuhkan sebagai cadangan atau pengganti karena unit lama sudah tidak optimal atau kapasitasnya sudah penuh.'
+
+    if 'keyboard' in kategori or 'mouse' in kategori or 'ip-phone' in kategori or 'phone' in kategori or 'video conference' in kategori:
+        return 'Perangkat kerja ini perlu disediakan sebagai cadangan agar operasional pengguna tetap berjalan saat ada unit yang rusak atau habis pakai.'
+
+    return 'Pengajuan otomatis hasil sinkronisasi transaksi gudang untuk menjaga ketersediaan stok operasional.'
+
+
 def load_report_data(report_path):
     records = []
     with report_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
@@ -396,10 +426,7 @@ def seed_data(force=False):
                 continue
 
             first_date = min(t['date'] for t in incoming)
-            remarks_set = sorted({(t.get('remarks') or '').strip() for t in incoming if (t.get('remarks') or '').strip()})
-            alasan = 'Pengajuan otomatis hasil sinkronisasi transaksi gudang'
-            if remarks_set:
-                alasan = f"Pengajuan otomatis dari transaksi masuk gudang ({', '.join(remarks_set)})"
+            alasan = _build_purchase_reason(item)
 
             pr = PurchaseRequest(
                 no_pengajuan=f'PR-{first_date.year}-{sequence:04d}',
@@ -408,7 +435,7 @@ def seed_data(force=False):
                 quantity_requested=qty_requested,
                 alasan_pengajuan=alasan,
                 status='Completed',
-                approved_by='Sistem Sinkronisasi',
+                approved_by='IT Manager',
                 approved_at=datetime.utcnow(),
                 keterangan='Dibentuk otomatis saat sinkronisasi data gudang',
             )

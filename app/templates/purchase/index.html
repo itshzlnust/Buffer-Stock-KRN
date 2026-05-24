@@ -59,7 +59,7 @@
                             {% if pr.status == 'Pending' %}
                             <form method="POST" action="{{ url_for('main.approve_purchase', id=pr.id) }}" class="action-form" style="display:inline;">
                                 <input type="hidden" name="action" value="approve">
-                                <input type="hidden" name="approved_by" value="Admin">
+                                <input type="hidden" name="approved_by" value="IT Manager">
                                 <button type="submit" class="btn btn-sm btn-success" title="Approve">
                                     <i class="fas fa-check"></i>
                                 </button>
