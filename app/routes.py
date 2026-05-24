@@ -4,6 +4,7 @@ from app.models import Item, Criteria, CriteriaValue, CalculationHistory, Stock,
 from app.saw_algorithm import SAWCalculator
 import json, csv, io
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 main_bp = Blueprint('main', __name__)
 
@@ -67,7 +68,7 @@ def items():
     if search:
         query = query.filter(Item.nama_item.ilike(f'%{search}%'))
     
-    items = query.order_by(Item.kode_item).paginate(
+    items = query.options(joinedload(Item.stock_items)).order_by(Item.kode_item).paginate(
         page=page, per_page=per_page, error_out=False)
     
     categories = db.session.query(Item.kategori).distinct().all()

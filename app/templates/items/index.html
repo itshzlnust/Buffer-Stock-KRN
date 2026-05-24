@@ -36,7 +36,7 @@
                         <th>Kode</th>
                         <th>Nama Item</th>
                         <th>Kategori</th>
-                        <th>Unit</th>
+                        <th>Sisa Stok</th>
                         <th>Lokasi</th>
                         <th>Supplier</th>
                         <th>Aksi</th>
@@ -48,7 +48,14 @@
                         <td><code>{{ item.kode_item }}</code></td>
                         <td>{{ item.nama_item }}</td>
                         <td><span class="badge">{{ item.kategori }}</span></td>
-                        <td>{{ item.unit }}</td>
+                        {% set stock = item.stock_items[0] if item.stock_items else none %}
+                        <td>
+                            {% if stock %}
+                            <strong>{{ stock.quantity }}</strong> unit
+                            {% else %}
+                            <span class="text-muted">0 unit</span>
+                            {% endif %}
+                        </td>
                         <td>{{ item.lokasi_rak or '-' }}</td>
                         <td>{{ item.supplier or '-' }}</td>
                         <td>
