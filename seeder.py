@@ -1,235 +1,391 @@
 from app import create_app, db
-from app.models import Item, Criteria, CriteriaValue, Stock, Usage, PurchaseRequest
-import random
-from datetime import datetime, timedelta
+from app.models import Item, Criteria, CriteriaValue, Stock, Usage, PurchaseRequest, CalculationHistory
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+import csv
 
 app = create_app()
 
+LOCATION_COLUMNS = {
+    'Lemari Kaca': 3,
+    'Lemari': 4,
+    'Rak A': 5,
+    'Rak B': 6,
+    'Rak C': 7,
+    'Rak D': 8,
+    'Rak E': 9,
+    'Rak F': 10,
+    'Rak G': 11,
+    'Lantai': 12,
+}
+
+CATEGORY_COST_PROXY = {
+    'Switch': 95,
+    'Network Camera': 90,
+    'NVR': 88,
+    'UPS': 85,
+    'Mini PC': 82,
+    'PC': 80,
+    'Monitor': 75,
+    'HDD Server': 78,
+    'HDD': 70,
+    'Media Converter': 68,
+    'IP-Phone': 65,
+}
+
+CATEGORY_CRITICALITY = {
+    'Switch': 10,
+    'Network Camera': 10,
+    'NVR': 10,
+    'UPS': 9,
+    'HDD Server': 9,
+    'Server': 9,
+    'Media Converter': 8,
+    'IP-Phone': 8,
+    'Network Cable': 8,
+    'Patch Cord': 8,
+    'PoE Injector': 8,
+}
+
+
+def _to_number(value):
+    if value is None:
+        return 0.0
+    cleaned = str(value).strip().replace(',', '')
+    if cleaned in ('', '-', '#N/A'):
+        return 0.0
+    try:
+        return float(cleaned)
+    except ValueError:
+        return 0.0
+
+
+def _parse_date(value):
+    date_str = (value or '').strip()
+    if not date_str:
+        return None
+    for fmt in ('%d-%b-%y', '%d-%b-%Y', '%d/%m/%Y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _discover_csv_path(filename):
+    base_dir = Path(__file__).resolve().parent
+    candidates = [
+        base_dir / filename,
+        base_dir.parent / filename,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f'File CSV tidak ditemukan: {filename}')
+
+
+def load_report_data(report_path):
+    records = []
+    with report_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
+        reader = csv.reader(file_obj)
+        next(reader, None)
+        next(reader, None)
+
+        for row in reader:
+            if len(row) < 14:
+                continue
+
+            kategori = (row[1] or '').strip()
+            nama_item = (row[2] or '').strip()
+            if not kategori or not nama_item:
+                continue
+
+            locations = {}
+            for loc_name, idx in LOCATION_COLUMNS.items():
+                qty = _to_number(row[idx] if idx < len(row) else 0)
+                if qty > 0:
+                    locations[loc_name] = qty
+
+            total_qty = _to_number(row[13] if len(row) > 13 else 0)
+            if total_qty <= 0 and locations:
+                total_qty = sum(locations.values())
+
+            dominant_location = ''
+            if locations:
+                dominant_location = max(locations.items(), key=lambda x: x[1])[0]
+
+            records.append({
+                'key': (kategori, nama_item),
+                'kategori': kategori,
+                'nama_item': nama_item,
+                'total_qty': total_qty,
+                'dominant_location': dominant_location,
+            })
+
+    return records
+
+
+def load_transaction_data(in_out_path):
+    grouped = defaultdict(list)
+    monthly_in = defaultdict(float)
+    monthly_out = defaultdict(float)
+
+    with in_out_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
+        reader = csv.reader(file_obj)
+        for row in reader:
+            if len(row) < 10:
+                continue
+
+            try:
+                int((row[0] or '').strip())
+            except ValueError:
+                continue
+
+            kategori = (row[5] or '').strip()
+            nama_item = (row[6] or '').strip()
+            in_out = (row[3] or '').strip().upper()
+            jenis_trans = (row[2] or '').strip().upper()
+            qty = _to_number(row[9])
+            trans_date = _parse_date(row[1])
+
+            if not kategori or not nama_item or in_out not in ('IN', 'OUT'):
+                continue
+            if qty <= 0 or trans_date is None:
+                continue
+
+            key = (kategori, nama_item)
+            grouped[key].append({
+                'date': trans_date,
+                'jenis_trans': jenis_trans,
+                'in_out': in_out,
+                'qty': qty,
+            })
+
+            ym_key = (key, trans_date.year, trans_date.month)
+            if in_out == 'IN':
+                monthly_in[ym_key] += qty
+            else:
+                monthly_out[ym_key] += qty
+
+    return grouped, monthly_in, monthly_out
+
+
+def build_metrics(report_records, transactions, monthly_in, monthly_out):
+    month_keys = sorted({(year, month) for (_, year, month) in monthly_in.keys()} | {(year, month) for (_, year, month) in monthly_out.keys()})
+    if not month_keys:
+        now = datetime.now()
+        month_keys = [(now.year, m) for m in range(1, 13)]
+
+    metrics = {}
+    for rec in report_records:
+        key = rec['key']
+        trans_list = sorted(transactions.get(key, []), key=lambda x: x['date'])
+
+        total_out = 0.0
+        stock_out_frequency = 0
+        for year, month in month_keys:
+            out_qty = monthly_out.get((key, year, month), 0.0)
+            in_qty = monthly_in.get((key, year, month), 0.0)
+            total_out += out_qty
+            if out_qty > in_qty:
+                stock_out_frequency += 1
+
+        avg_demand = total_out / len(month_keys) if month_keys else 0.0
+
+        in_dates = [t['date'] for t in trans_list if t['in_out'] == 'IN' and t['jenis_trans'] != 'SALDO']
+        in_dates.sort()
+        if len(in_dates) > 1:
+            gaps = [(in_dates[idx] - in_dates[idx - 1]).days for idx in range(1, len(in_dates))]
+            lead_time = sum(gaps) / len(gaps)
+        else:
+            lead_time = 30.0
+
+        lead_time = max(1.0, min(60.0, lead_time))
+        item_cost_proxy = float(CATEGORY_COST_PROXY.get(rec['kategori'], 50))
+        criticality = float(CATEGORY_CRITICALITY.get(rec['kategori'], 6))
+
+        metrics[key] = {
+            'avg_demand': round(avg_demand, 2),
+            'lead_time': round(lead_time, 2),
+            'item_cost_proxy': item_cost_proxy,
+            'stock_out_frequency': float(stock_out_frequency),
+            'criticality': criticality,
+        }
+
+    return metrics, month_keys
+
+
 def seed_data():
+    report_csv = _discover_csv_path('IT_Warehouse_2025 - Copy.xlsx - Report.csv')
+    in_out_csv = _discover_csv_path('IT_Warehouse_2025 - Copy.xlsx - IN_OUT.csv')
+
+    report_records = load_report_data(report_csv)
+    transactions, monthly_in, monthly_out = load_transaction_data(in_out_csv)
+    metrics, month_keys = build_metrics(report_records, transactions, monthly_in, monthly_out)
+
     with app.app_context():
-        print("Mulai seeding database...")
-        
-        # Clear existing data
+        print('Mulai seeding database dari CSV...')
+
+        db.session.query(PurchaseRequest).delete()
+        db.session.query(Usage).delete()
+        db.session.query(Stock).delete()
         db.session.query(CriteriaValue).delete()
+        db.session.query(CalculationHistory).delete()
         db.session.query(Item).delete()
         db.session.query(Criteria).delete()
         db.session.commit()
-        print("Data lama dihapus.")
-        
-        # Seed Criteria (Kriteria untuk SAW)
+        print('Data lama dihapus.')
+
         criteria_data = [
             {
                 'kode_kriteria': 'C1',
                 'nama_kriteria': 'Average Demand (Rata-rata Permintaan)',
                 'bobot': 0.25,
                 'tipe': 'benefit',
-                'keterangan': 'Rata-rata permintaan item per bulan (unit) - semakin tinggi semakin baik'
+                'keterangan': 'Rata-rata pengeluaran barang per bulan (unit) dari data transaksi OUT',
             },
             {
                 'kode_kriteria': 'C2',
                 'nama_kriteria': 'Lead Time (Waktu Tunggu)',
                 'bobot': 0.20,
                 'tipe': 'cost',
-                'keterangan': 'Waktu tunggu pengiriman dari supplier (hari) - semakin rendah semakin baik'
+                'keterangan': 'Estimasi jarak hari antar transaksi IN non-saldo (hari) - semakin rendah semakin baik',
             },
             {
                 'kode_kriteria': 'C3',
                 'nama_kriteria': 'Item Cost (Biaya Item)',
                 'bobot': 0.15,
                 'tipe': 'cost',
-                'keterangan': 'Biaya per unit item (ribu rupiah) - semakin rendah semakin baik'
+                'keterangan': 'Proxy biaya item berbasis kategori barang',
             },
             {
                 'kode_kriteria': 'C4',
                 'nama_kriteria': 'Stock Out Frequency',
                 'bobot': 0.20,
                 'tipe': 'benefit',
-                'keterangan': 'Frekuensi kehabisan stok dalam 6 bulan terakhir - semakin sering semakin perlu buffer'
+                'keterangan': 'Jumlah bulan ketika OUT > IN untuk item tersebut',
             },
             {
                 'kode_kriteria': 'C5',
                 'nama_kriteria': 'Criticality Level',
                 'bobot': 0.20,
                 'tipe': 'benefit',
-                'keterangan': 'Tingkat kepentingan item (1-10) - semakin tinggi semakin kritis'
-            }
+                'keterangan': 'Tingkat kritikalitas item berdasarkan kategori infrastruktur',
+            },
         ]
-        
-        criteria_objects = []
+
+        criteria_objects = {}
         for c in criteria_data:
             criteria = Criteria(**c)
             db.session.add(criteria)
-            criteria_objects.append(criteria)
-        
+            db.session.flush()
+            criteria_objects[criteria.kode_kriteria] = criteria
         db.session.commit()
-        print(f"{len(criteria_objects)} kriteria ditambahkan.")
-        
-        # Seed Items (Data Dummy Item Warehouse)
-        kategori_list = ['Spare Part', 'Raw Material', 'Consumable', 'Safety Equipment', 'Tools']
-        supplier_list = ['PT. Industrial Supply', 'PT. Mega Sejahtera', 'CV. Teknik Jaya', 'PT. Sarana Abadi', 'PT. Sumber Utama']
-        lokasi_list = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3']
-        
-        item_names = [
-            ('BEARING 6204', 'Spare Part'),
-            ('BEARING 6205', 'Spare Part'),
-            ('BEARING 6308', 'Spare Part'),
-            ('SEAL OIL NBR 50x70x10', 'Spare Part'),
-            ('SEAL OIL VITON 40x60x8', 'Spare Part'),
-            ('BELT CONVEYOR EP 100', 'Spare Part'),
-            ('ROLLER CONVEYOR 4 inch', 'Spare Part'),
-            ('COUPLING FLEXIBLE', 'Spare Part'),
-            ('GEAR MOTOR 5 HP', 'Spare Part'),
-            ('PUMP CENTRIFugal 3 inch', 'Spare Part'),
-            ('VALVE GATE 4 inch', 'Spare Part'),
-            ('VALVE BALL SS 2 inch', 'Spare Part'),
-            ('FILTER OIL 10 micron', 'Consumable'),
-            ('FILTER AIR 50 micron', 'Consumable'),
-            ('GREASE LITHIUM EP2', 'Consumable'),
-            ('OIL HYDRAULIC VG 68', 'Consumable'),
-            ('OIL GEAR VG 220', 'Consumable'),
-            ('OIL TURBINE VG 32', 'Consumable'),
-            ('SOLVENT CLEANER', 'Consumable'),
-            ('PAINT EPOXY GREY', 'Consumable'),
-            ('THINNER POLYURETHANE', 'Consumable'),
-            ('WELDING ROD E7018', 'Consumable'),
-            ('GAS OXYGEN', 'Raw Material'),
-            ('GAS ACETYLENE', 'Raw Material'),
-            ('STEEL PLATE SS304 6mm', 'Raw Material'),
-            ('STEEL PIPE SCH 40 4 inch', 'Raw Material'),
-            ('STEEL ANGLE 50x50x5', 'Raw Material'),
-            ('BOLT M16x50 SS304', 'Raw Material'),
-            ('NUT M16 SS304', 'Raw Material'),
-            ('WASHER M16 SS304', 'Raw Material'),
-            ('HELMET SAFETY', 'Safety Equipment'),
-            ('SAFETY SHOES', 'Safety Equipment'),
-            ('SAFETY GOGGLES', 'Safety Equipment'),
-            ('EAR PLUG', 'Safety Equipment'),
-            ('RESPIRATOR MASK', 'Safety Equipment'),
-            ('SAFETY GLOVES', 'Safety Equipment'),
-            ('HARNESS FULL BODY', 'Safety Equipment'),
-            ('WRENCH SET 14 PCS', 'Tools'),
-            ('SOCKET SET 24 PCS', 'Tools'),
-            ('PIPE WRENCH 18 inch', 'Tools'),
-            ('HAMMER BALL PEIN 2 lb', 'Tools'),
-            ('SCREWDRIVER SET 6 PCS', 'Tools'),
-            ('PLIER SET 3 PCS', 'Tools'),
-            ('MEASURING TAPE 5m', 'Tools'),
-            ('CALIPER DIGITAL 150mm', 'Tools'),
-            ('MULTIMETER DIGITAL', 'Tools'),
-            ('PRESSURE GAUGE 0-10 bar', 'Tools'),
-            ('TEMPERATURE GAUGE 0-200C', 'Tools'),
-        ]
-        
-        item_objects = []
-        for idx, (nama, kategori) in enumerate(item_names, 1):
-            kode = f'ITM-{idx:04d}'
-            harga = random.randint(50000, 5000000)
-            supplier = random.choice(supplier_list)
-            lokasi = random.choice(lokasi_list)
-            
+
+        sorted_records = sorted(report_records, key=lambda x: (x['kategori'].lower(), x['nama_item'].lower()))
+        item_by_key = {}
+        for idx, rec in enumerate(sorted_records, start=1):
             item = Item(
-                kode_item=kode,
-                nama_item=nama,
-                kategori=kategori,
-                unit='PCS' if kategori != 'Raw Material' else 'KG/PCS',
-                harga=harga,
-                supplier=supplier,
-                lokasi_rak=f'RACK-{lokasi}'
+                kode_item=f'ITM-{idx:04d}',
+                nama_item=rec['nama_item'],
+                kategori=rec['kategori'],
+                unit='PCS',
+                harga=0.0,
+                supplier='Data Import CSV',
+                lokasi_rak=rec['dominant_location'] or '-',
             )
             db.session.add(item)
-            item_objects.append(item)
-        
+            db.session.flush()
+            item_by_key[rec['key']] = item
         db.session.commit()
-        print(f"{len(item_objects)} item ditambahkan.")
-        
-        # Seed Criteria Values (Nilai untuk setiap item pada setiap kriteria)
-        criteria_values = []
-        for item in item_objects:
-            for criteria in criteria_objects:
-                # Generate nilai sesuai tipe kriteria
-                if criteria.kode_kriteria == 'C1':  # Average Demand
-                    nilai = random.randint(10, 500)
-                elif criteria.kode_kriteria == 'C2':  # Lead Time
-                    nilai = random.randint(3, 45)
-                elif criteria.kode_kriteria == 'C3':  # Item Cost
-                    nilai = round(item.harga / 1000, 2)  # Dalam ribuan
-                elif criteria.kode_kriteria == 'C4':  # Stock Out Frequency
-                    nilai = random.randint(0, 10)
-                elif criteria.kode_kriteria == 'C5':  # Criticality Level
-                    if 'Spare Part' in item.kategori or 'Raw Material' in item.kategori:
-                        nilai = random.randint(6, 10)
-                    else:
-                        nilai = random.randint(3, 8)
-                else:
-                    nilai = random.randint(1, 10)
-                
-                cv = CriteriaValue(
-                    item_id=item.id,
-                    criteria_id=criteria.id,
-                    nilai=nilai
-                )
-                db.session.add(cv)
-                criteria_values.append(cv)
-        
-        db.session.commit()
-        print(f"{len(criteria_values)} nilai kriteria ditambahkan.")
-        
-        # Seed Stock
-        stocks = []
-        for item in item_objects:
-            qty = random.randint(0, 200)
-            safety = random.randint(10, 50)
-            reorder = random.randint(20, 100)
-            stock = Stock(item_id=item.id, quantity=qty, safety_stock=safety, reorder_point=reorder)
-            db.session.add(stock)
-            stocks.append(stock)
-        
-        db.session.commit()
-        print(f"{len(stocks)} data stock ditambahkan.")
-        
-        # Seed Usage (pemakaian 12 bulan terakhir)
-        usages = []
-        current_year = datetime.now().year
-        for item in item_objects:
-            for bulan in range(1, 13):
-                qty = random.randint(0, 80)
-                usage = Usage(item_id=item.id, tahun=current_year, bulan=bulan, quantity_used=qty)
-                db.session.add(usage)
-                usages.append(usage)
-        
-        db.session.commit()
-        print(f"{len(usages)} data pemakaian ditambahkan.")
-        
-        # Seed Purchase Requests
-        prs = []
-        statuses = ['Pending', 'Approved', 'Rejected', 'Completed']
-        for item in item_objects[:15]:
-            status = random.choice(statuses)
-            last_pr = PurchaseRequest.query.order_by(PurchaseRequest.id.desc()).first()
-            if last_pr:
-                parts = last_pr.no_pengajuan.split('-')
-                num = int(parts[-1]) + 1
-                pr_number = f'PR-{parts[1]}-{num:04d}'
-            else:
-                pr_number = f'PR-{current_year}-0001'
-            
-            pr = PurchaseRequest(
-                no_pengajuan=pr_number,
+
+        usage_rows = 0
+        stock_rows = 0
+        criteria_rows = 0
+        pr_rows = 0
+
+        for rec in sorted_records:
+            item = item_by_key[rec['key']]
+            metric = metrics.get(rec['key'], {
+                'avg_demand': 0.0,
+                'lead_time': 30.0,
+                'item_cost_proxy': 50.0,
+                'stock_out_frequency': 0.0,
+                'criticality': 6.0,
+            })
+
+            safety_stock = max(1.0, round(metric['avg_demand'] * 0.5, 2))
+            reorder_point = max(safety_stock + 1.0, round(metric['avg_demand'] * 1.2, 2))
+            stock = Stock(
                 item_id=item.id,
-                quantity_requested=random.randint(10, 100),
-                alasan_pengajuan='Pengajuan pembelian untuk buffer stock',
-                status=status,
-                approved_by='Admin' if status in ['Approved', 'Completed'] else None,
-                approved_at=datetime.utcnow() if status in ['Approved', 'Completed'] else None
+                quantity=rec['total_qty'],
+                safety_stock=safety_stock,
+                reorder_point=reorder_point,
+            )
+            db.session.add(stock)
+            stock_rows += 1
+
+            criteria_payload = {
+                'C1': metric['avg_demand'],
+                'C2': metric['lead_time'],
+                'C3': metric['item_cost_proxy'],
+                'C4': metric['stock_out_frequency'],
+                'C5': metric['criticality'],
+            }
+            for code, value in criteria_payload.items():
+                cv = CriteriaValue(item_id=item.id, criteria_id=criteria_objects[code].id, nilai=value)
+                db.session.add(cv)
+                criteria_rows += 1
+
+            per_item_monthly_out = defaultdict(float)
+            for year, month in month_keys:
+                out_qty = monthly_out.get((rec['key'], year, month), 0.0)
+                if out_qty > 0:
+                    per_item_monthly_out[(year, month)] += out_qty
+
+            for (year, month), out_qty in per_item_monthly_out.items():
+                usage = Usage(item_id=item.id, tahun=year, bulan=month, quantity_used=out_qty)
+                db.session.add(usage)
+                usage_rows += 1
+
+        sequence = 1
+        for rec in sorted_records:
+            item = item_by_key[rec['key']]
+            trans = transactions.get(rec['key'], [])
+            incoming = [t for t in trans if t['in_out'] == 'IN' and t['jenis_trans'] in ('MASUK', 'ADJ +')]
+            if not incoming:
+                continue
+
+            qty_requested = round(sum(t['qty'] for t in incoming), 2)
+            if qty_requested <= 0:
+                continue
+
+            first_date = min(t['date'] for t in incoming)
+            pr = PurchaseRequest(
+                no_pengajuan=f'PR-{first_date.year}-{sequence:04d}',
+                tanggal_pengajuan=first_date,
+                item_id=item.id,
+                quantity_requested=qty_requested,
+                alasan_pengajuan='Auto-import dari transaksi IN (MASUK/ADJ+) CSV',
+                status='Completed',
+                approved_by='System Import',
+                approved_at=datetime.utcnow(),
+                keterangan='Dibentuk otomatis saat sinkronisasi CSV',
             )
             db.session.add(pr)
-            prs.append(pr)
-        
+            sequence += 1
+            pr_rows += 1
+
         db.session.commit()
-        print(f"{len(prs)} data pengajuan pembelian ditambahkan.")
-        
-        print("\nSeeding selesai!")
-        print(f"Total: {len(criteria_objects)} kriteria, {len(item_objects)} items, {len(criteria_values)} nilai kriteria, {len(stocks)} stock, {len(usages)} usage, {len(prs)} PR")
+
+        print('\nSeeding selesai!')
+        print(f'Total item: {len(sorted_records)}')
+        print(f'Total stock: {stock_rows}')
+        print(f'Total usage: {usage_rows}')
+        print(f'Total criteria values: {criteria_rows}')
+        print(f'Total purchase requests: {pr_rows}')
+
 
 if __name__ == '__main__':
     seed_data()

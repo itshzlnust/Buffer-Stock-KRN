@@ -442,8 +442,11 @@ def purchase_list():
 
 @main_bp.route('/purchase/history')
 def purchase_history():
-    prs = PurchaseRequest.query.join(Item).order_by(PurchaseRequest.tanggal_pengajuan.desc()).paginate(page=1, per_page=999, error_out=False)
     status_filter = request.args.get('status', '')
+    query = PurchaseRequest.query.join(Item)
+    if status_filter:
+        query = query.filter(PurchaseRequest.status == status_filter)
+    prs = query.order_by(PurchaseRequest.tanggal_pengajuan.desc()).paginate(page=1, per_page=999, error_out=False)
     return render_template('purchase/history.html', prs=prs, status_filter=status_filter)
 
 @main_bp.route('/purchase/create', methods=['GET', 'POST'])

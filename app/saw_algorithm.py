@@ -66,9 +66,11 @@ class SAWCalculator:
                     self.normalized_matrix[:, j] = 0
             else:  # cost
                 # Cost: min normalization
-                min_val = np.min(column)
-                if min_val != 0:
-                    self.normalized_matrix[:, j] = min_val / column
+                non_zero_vals = column[column > 0]
+                if non_zero_vals.size > 0:
+                    min_val = np.min(non_zero_vals)
+                    # Hindari pembagian nol untuk nilai cost yang kosong/0.
+                    self.normalized_matrix[:, j] = np.where(column > 0, min_val / column, 0)
                 else:
                     self.normalized_matrix[:, j] = 0
         
@@ -175,7 +177,7 @@ class SAWCalculator:
         # Ambil nilai demand rata-rata jika ada
         demand_value = CriteriaValue.query.join(Criteria).filter(
             CriteriaValue.item_id == item.id,
-            Criteria.kode_kriteria.ilike('%demand%')
+            Criteria.nama_kriteria.ilike('%average demand%')
         ).first()
         
         if demand_value:

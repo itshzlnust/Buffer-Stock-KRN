@@ -33,10 +33,15 @@ python -m venv venv
 # 2. Install dependencies
 venv\Scripts\pip install flask flask-sqlalchemy numpy pandas werkzeug
 
-# 3. Seed database dengan data dummy
+# 3. Pastikan file CSV tersedia di folder parent proyek:
+#    - IT_Warehouse_2025 - Copy.xlsx - Report.csv
+#    - IT_Warehouse_2025 - Copy.xlsx - IN_OUT.csv
+#    Seeder akan membaca file tersebut untuk sinkron data master dan transaksi.
+
+# 4. Seed database dari data CSV
 venv\Scripts\python seeder.py
 
-# 4. Jalankan aplikasi
+# 5. Jalankan aplikasi
 venv\Scripts\python run.py
 ```
 
@@ -67,6 +72,7 @@ sistem_saw_buffer_stock/
 - **Frontend**: HTML, CSS, JavaScript
 - **Math**: NumPy
 
-## Data Dummy
+## Sumber Data
 
-Sistem dilengkapi dengan 48 barang warehouse, 576 data pemakaian (12 bulan × 48 barang), dan 15 pengajuan pembelian.
+- Data master item dan stok diambil dari file Report CSV.
+- Data pemakaian (OUT) dan pengajuan pembelian otomatis (IN: MASUK/ADJ+) dibentuk dari file IN_OUT CSV.
