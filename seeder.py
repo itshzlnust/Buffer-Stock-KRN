@@ -3,6 +3,7 @@ from app.models import Item, Criteria, CriteriaValue, Stock, Usage, PurchaseRequ
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+import argparse
 import csv
 
 app = create_app()
@@ -241,7 +242,7 @@ def build_metrics(report_records, transactions, monthly_in, monthly_out):
     return metrics, month_keys
 
 
-def seed_data():
+def seed_data(force=False):
     report_csv = _discover_csv_path('IT_Warehouse_2025 - Copy.xlsx - Report.csv')
     in_out_csv = _discover_csv_path('IT_Warehouse_2025 - Copy.xlsx - IN_OUT.csv')
 
@@ -251,6 +252,10 @@ def seed_data():
 
     with app.app_context():
         print('Mulai seeding database dari CSV...')
+
+        if not force and Item.query.count() > 0:
+            print('Database sudah berisi data. Seeder dilewati karena mode aman aktif.')
+            return
 
         db.session.query(PurchaseRequest).delete()
         db.session.query(Usage).delete()
@@ -417,4 +422,7 @@ def seed_data():
 
 
 if __name__ == '__main__':
-    seed_data()
+    parser = argparse.ArgumentParser(description='Seed database from CSV files')
+    parser.add_argument('--force', action='store_true', help='Reset dan impor ulang data dari CSV')
+    args = parser.parse_args()
+    seed_data(force=args.force)

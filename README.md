@@ -38,8 +38,11 @@ venv\Scripts\pip install flask flask-sqlalchemy numpy pandas werkzeug
 #    - IT_Warehouse_2025 - Copy.xlsx - IN_OUT.csv
 #    Seeder akan membaca file tersebut untuk sinkron data master dan transaksi.
 
-# 4. Seed database dari data CSV
+# 4. Seed database dari data CSV (hanya untuk bootstrap atau reimport paksa)
 venv\Scripts\python seeder.py
+
+#    Jika ingin reset lalu impor ulang dari CSV:
+#    venv\Scripts\python seeder.py --force
 
 # 5. Jalankan aplikasi
 venv\Scripts\python run.py
@@ -76,3 +79,4 @@ sistem_saw_buffer_stock/
 
 - Data master item dan stok diambil dari file Report CSV.
 - Data pemakaian (OUT) dan pengajuan pembelian otomatis (IN: MASUK/ADJ+) dibentuk dari file IN_OUT CSV.
+- Database aplikasi disimpan permanen di `instance/warehouse.db`, jadi perubahan dari web tersimpan tanpa perlu menjalankan seeder lagi.
