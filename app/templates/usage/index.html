@@ -45,8 +45,8 @@
                         <td><code>{{ item.kode_item }}</code></td>
                         <td>{{ item.nama_item }}</td>
                         <td><span class="badge">{{ item.kategori }}</span></td>
-                        <td><strong>{{ total }}</strong> {{ item.unit }}</td>
-                        <td>{{ "%.1f"|format(total / 12) }} {{ item.unit }}</td>
+                        <td><strong>{{ total|int }}</strong> {{ item.unit }}</td>
+                        <td>{{ (total / 12)|round(0)|int }} {{ item.unit }}</td>
                         <td>
                             {% if total > 500 %}
                             <span class="badge badge-danger">High Usage</span>

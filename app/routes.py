@@ -378,7 +378,9 @@ def update_stock():
 
 @main_bp.route('/usage')
 def usage():
-    year = request.args.get('year', datetime.now().year, type=int)
+    available_years = [y for (y,) in db.session.query(Usage.tahun).distinct().order_by(Usage.tahun).all()]
+    default_year = available_years[-1] if available_years else datetime.now().year
+    year = request.args.get('year', default_year, type=int)
     item_id = request.args.get('item_id', type=int)
     
     query = Usage.query.filter_by(tahun=year)
@@ -400,7 +402,8 @@ def usage():
                           items=items, 
                           year=year, 
                           selected_item=item_id,
-                          item_usage=item_usage)
+                          item_usage=item_usage,
+                          years=available_years or [year])
 
 @main_bp.route('/usage/add', methods=['GET', 'POST'])
 def add_usage():
@@ -422,7 +425,8 @@ def add_usage():
         return redirect(url_for('main.usage'))
     
     items = Item.query.order_by(Item.nama_item).all()
-    current_year = datetime.now().year
+    available_years = [y for (y,) in db.session.query(Usage.tahun).distinct().order_by(Usage.tahun).all()]
+    current_year = available_years[-1] if available_years else datetime.now().year
     return render_template('usage/add.html', items=items, current_year=current_year)
 
 # ==================== PURCHASE REQUEST ====================
