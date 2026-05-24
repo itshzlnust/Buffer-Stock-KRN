@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail PR - Sistem Buffer Stock{% endblock %}
+{% block page_title %}Detail Pengajuan Pembelian{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="card" style="max-width: 900px;">
+        <div class="card-header">
+            <h3>{{ pr.no_pengajuan }}</h3>
+            <div class="header-actions">
+                <a href="{{ url_for('main.purchase_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="info-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                <div>
+                    <strong>Tanggal</strong><br>
+                    <span>{{ pr.tanggal_pengajuan.strftime('%d/%m/%Y') }}</span>
+                </div>
+                <div>
+                    <strong>Status</strong><br>
+                    <span>
+                        {% if pr.status == 'Pending' %}
+                        <span class="badge badge-warning">Pending</span>
+                        {% elif pr.status == 'Approved' %}
+                        <span class="badge badge-success">Approved</span>
+                        {% elif pr.status == 'Rejected' %}
+                        <span class="badge badge-danger">Rejected</span>
+                        {% else %}
+                        <span class="badge badge-info">Completed</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <strong>Disetujui Oleh</strong><br>
+                    <span>{{ pr.approved_by or '-' }}</span>
+                </div>
+                <div>
+                    <strong>Jumlah Diminta</strong><br>
+                    <span>{{ pr.quantity_requested|int }} {{ pr.item.unit }}</span>
+                </div>
+            </div>
+
+            <hr style="margin: 24px 0;">
+
+            <div class="form-group">
+                <strong>Barang</strong><br>
+                <span>{{ pr.item.nama_item }}</span><br>
+                <small class="text-muted">{{ pr.item.kode_item }} | {{ pr.item.kategori }}</small>
+            </div>
+
+            <div class="form-group">
+                <strong>Alasan Pengajuan</strong>
+                <p style="margin-top: 8px; line-height: 1.6;">{{ pr.alasan_pengajuan or '-' }}</p>
+            </div>
+
+            <div class="form-group">
+                <strong>Keterangan</strong>
+                <p style="margin-top: 8px; line-height: 1.6;">{{ pr.keterangan or '-' }}</p>
+            </div>
+
+            {% if pr.approved_at %}
+            <div class="form-group">
+                <strong>Waktu Persetujuan</strong><br>
+                <span>{{ pr.approved_at.strftime('%d/%m/%Y %H:%M') }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

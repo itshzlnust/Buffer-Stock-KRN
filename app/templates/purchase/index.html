@@ -53,6 +53,9 @@
                         </td>
                         <td>{{ pr.approved_by or '-' }}</td>
                         <td>
+                            <a href="{{ url_for('main.purchase_detail', id=pr.id) }}" class="btn btn-sm btn-secondary" title="Detail">
+                                <i class="fas fa-eye"></i>
+                            </a>
                             {% if pr.status == 'Pending' %}
                             <form method="POST" action="{{ url_for('main.approve_purchase', id=pr.id) }}" class="action-form" style="display:inline;">
                                 <input type="hidden" name="action" value="approve">

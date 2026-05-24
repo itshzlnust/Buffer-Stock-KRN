@@ -396,16 +396,21 @@ def seed_data(force=False):
                 continue
 
             first_date = min(t['date'] for t in incoming)
+            remarks_set = sorted({(t.get('remarks') or '').strip() for t in incoming if (t.get('remarks') or '').strip()})
+            alasan = 'Pengajuan otomatis hasil sinkronisasi transaksi gudang'
+            if remarks_set:
+                alasan = f"Pengajuan otomatis dari transaksi masuk gudang ({', '.join(remarks_set)})"
+
             pr = PurchaseRequest(
                 no_pengajuan=f'PR-{first_date.year}-{sequence:04d}',
                 tanggal_pengajuan=first_date,
                 item_id=item.id,
                 quantity_requested=qty_requested,
-                alasan_pengajuan='Auto-import dari transaksi IN (MASUK/ADJ+) CSV',
+                alasan_pengajuan=alasan,
                 status='Completed',
-                approved_by='System Import',
+                approved_by='Sistem Sinkronisasi',
                 approved_at=datetime.utcnow(),
-                keterangan='Dibentuk otomatis saat sinkronisasi CSV',
+                keterangan='Dibentuk otomatis saat sinkronisasi data gudang',
             )
             db.session.add(pr)
             sequence += 1

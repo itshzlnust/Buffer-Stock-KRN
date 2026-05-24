@@ -486,6 +486,11 @@ def create_purchase():
     items = Item.query.order_by(Item.nama_item).all()
     return render_template('purchase/create.html', items=items)
 
+@main_bp.route('/purchase/<int:id>')
+def purchase_detail(id):
+    pr = PurchaseRequest.query.get_or_404(id)
+    return render_template('purchase/detail.html', pr=pr)
+
 @main_bp.route('/purchase/approve/<int:id>', methods=['POST'])
 def approve_purchase(id):
     pr = PurchaseRequest.query.get_or_404(id)
