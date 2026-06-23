@@ -147,13 +147,17 @@ def delete_item(id):
 # ==================== CRITERIA ====================
 @main_bp.route('/criteria')
 def criteria():
-    criteria_list = Criteria.query.order_by(Criteria.kode_kriteria).all()
-    
-    # Calculate total weight
-    total_bobot = sum(c.bobot for c in criteria_list)
-    
-    return render_template('criteria/index.html', 
+    criteria_list = Criteria.query.filter_by(parent_id=None).order_by(Criteria.kode_kriteria).all()
+    all_criteria = Criteria.query.order_by(Criteria.kode_kriteria).all()
+
+    def get_total_weight(criteria_items):
+        return sum(c.bobot for c in criteria_items)
+
+    total_bobot = get_total_weight(all_criteria)
+
+    return render_template('criteria/index.html',
                           criteria_list=criteria_list,
+                          all_criteria=all_criteria,
                           total_bobot=total_bobot)
 
 @main_bp.route('/criteria/create', methods=['GET', 'POST'])
@@ -164,49 +168,90 @@ def create_criteria():
         bobot = request.form.get('bobot')
         tipe = request.form.get('tipe')
         keterangan = request.form.get('keterangan')
-        
-        # Check duplicate
+        parent_kode = request.form.get('parent_kode') or None
+
         if Criteria.query.filter_by(kode_kriteria=kode).first():
             flash('Kode kriteria sudah ada!', 'error')
             return redirect(url_for('main.create_criteria'))
-        
+
+        parent = None
+        if parent_kode:
+            parent = Criteria.query.filter_by(kode_kriteria=parent_kode).first()
+
         criteria = Criteria(
             kode_kriteria=kode,
             nama_kriteria=nama,
             bobot=float(bobot),
             tipe=tipe,
-            keterangan=keterangan
+            keterangan=keterangan,
+            parent_id=parent.id if parent else None
         )
         db.session.add(criteria)
         db.session.commit()
-        
-        # Initialize criteria values for all items
+
         items = Item.query.all()
         for item in items:
             cv = CriteriaValue(item_id=item.id, criteria_id=criteria.id, nilai=0)
             db.session.add(cv)
         db.session.commit()
-        
+
         flash('Kriteria berhasil ditambahkan!', 'success')
         return redirect(url_for('main.criteria'))
-    
-    return render_template('criteria/create.html')
+
+    parent_options = Criteria.query.filter_by(parent_id=None).order_by(Criteria.kode_kriteria).all()
+    total_bobot = sum(c.bobot for c in Criteria.query.all())
+    return render_template('criteria/create.html', parent_options=parent_options, total_bobot=total_bobot)
 
 @main_bp.route('/criteria/edit/<int:id>', methods=['GET', 'POST'])
 def edit_criteria(id):
     criteria = Criteria.query.get_or_404(id)
-    
+
     if request.method == 'POST':
         criteria.nama_kriteria = request.form.get('nama_kriteria')
         criteria.bobot = float(request.form.get('bobot'))
         criteria.tipe = request.form.get('tipe')
         criteria.keterangan = request.form.get('keterangan')
-        
+        parent_kode = request.form.get('parent_kode') or None
+        if parent_kode and parent_kode != criteria.kode_kriteria:
+            parent = Criteria.query.filter_by(kode_kriteria=parent_kode).first()
+            criteria.parent_id = parent.id if parent else None
+        else:
+            criteria.parent_id = None
+
         db.session.commit()
         flash('Kriteria berhasil diupdate!', 'success')
         return redirect(url_for('main.criteria'))
-    
-    return render_template('criteria/edit.html', criteria=criteria)
+
+    parent_options = Criteria.query.filter(
+        (Criteria.parent_id.is_(None)) | (Criteria.id == criteria.parent_id),
+        Criteria.id != criteria.id
+    ).order_by(Criteria.kode_kriteria).all()
+    return render_template('criteria/edit.html', criteria=criteria, parent_options=parent_options)
+
+@main_bp.route('/criteria/delete/<int:id>', methods=['POST'])
+def delete_criteria(id):
+    criteria = Criteria.query.get_or_404(id)
+    db.session.delete(criteria)
+    db.session.commit()
+    flash('Kriteria berhasil dihapus!', 'success')
+    return redirect(url_for('main.criteria'))
+
+@main_bp.route('/criteria/reset', methods=['POST'])
+def reset_criteria():
+    default_criteria = [
+        {'kode_kriteria': 'C1', 'nama_kriteria': 'Average Demand (Rata-rata Permintaan)', 'bobot': 0.25, 'tipe': 'benefit', 'keterangan': 'Rata-rata pengeluaran barang per bulan (unit)'},
+        {'kode_kriteria': 'C2', 'nama_kriteria': 'Lead Time (Waktu Tunggu)', 'bobot': 0.20, 'tipe': 'cost', 'keterangan': 'Estimasi hari antar transaksi IN'},
+        {'kode_kriteria': 'C3', 'nama_kriteria': 'Item Cost (Biaya Item)', 'bobot': 0.15, 'tipe': 'cost', 'keterangan': 'Proxy biaya item berbasis kategori'},
+        {'kode_kriteria': 'C4', 'nama_kriteria': 'Stock Out Frequency', 'bobot': 0.20, 'tipe': 'benefit', 'keterangan': 'Jumlah bulan OUT > IN'},
+        {'kode_kriteria': 'C5', 'nama_kriteria': 'Criticality Level', 'bobot': 0.20, 'tipe': 'benefit', 'keterangan': 'Tingkat kritikalitas item'},
+    ]
+    db.session.query(Criteria).delete()
+    db.session.commit()
+    for c in default_criteria:
+        db.session.add(Criteria(**c))
+    db.session.commit()
+    flash('Kriteria direset ke default!', 'success')
+    return redirect(url_for('main.criteria'))
 
 # ==================== CRITERIA VALUES ====================
 @main_bp.route('/criteria-values')

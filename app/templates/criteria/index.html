@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Kriteria - Sistem Buffer Stock{% endblock %}
-{% block page_title %}Kriteria SAW{% endblock %}
+{% block page_title %}Pengaturan Kriteria & Bobot{% endblock %}
 
 {% block content %}
 <div class="section">
@@ -9,31 +9,51 @@
         <div class="card-header">
             <div class="alert {% if total_bobot == 1.0 %}alert-success{% else %}alert-warning{% endif %}">
                 <i class="fas fa-info-circle"></i>
-                Total Bobot: <strong>{{ "%.2f"|format(total_bobot) }}</strong>
-                {% if total_bobot != 1.0 %}(Harus = 1.0){% endif %}
+                Total Bobot: <strong>{{ "%.2f"|format(total_bobot) }}</strong> ({{ "%.0f"|format(total_bobot * 100) }}%)
+                {% if total_bobot != 1.0 %}<br><small style="margin-left: 20px;">Peringatan: Total bobot harus = 1.00</small>{% endif %}
             </div>
-            <a href="{{ url_for('main.create_criteria') }}" class="btn btn-success">
-                <i class="fas fa-plus"></i> Tambah Kriteria
-            </a>
+            <div style="display: flex; gap: 10px;">
+                <a href="{{ url_for('main.create_criteria') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Tambah Kriteria
+                </a>
+                <form method="POST" action="{{ url_for('main.reset_criteria') }}" onsubmit="return confirm('Reset kriteria ke default?')">
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i> Reset Default
+                    </button>
+                </form>
+            </div>
         </div>
-        
+
+        <div class="criteria-weights" style="padding: 20px; border-bottom: 1px solid var(--gray-100);">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <span style="font-size: 13px; color: var(--gray-500);">Total Bobot:</span>
+                <div style="flex: 1; height: 10px; background: var(--gray-200); border-radius: 5px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ "%.0f"|format(total_bobot * 100) }}%; background: {% if total_bobot == 1.0 %}var(--success){% else %}var(--warning){% endif %}; transition: width 0.3s;"></div>
+                </div>
+                <span style="font-size: 13px; font-weight: 600;">{{ "%.2f"|format(total_bobot) }} / 1.00</span>
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Kode</th>
+                        <th style="width: 80px;">Kode</th>
                         <th>Nama Kriteria</th>
                         <th>Bobot</th>
+                        <th>Persentase</th>
                         <th>Tipe</th>
-                        <th>Aksi</th>
+                        <th>Parent</th>
+                        <th style="width: 120px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in criteria_list %}
                     <tr>
                         <td><code>{{ c.kode_kriteria }}</code></td>
-                        <td>{{ c.nama_kriteria }}</td>
-                        <td class="text-right"><strong>{{ c.bobot }}</strong></td>
+                        <td><strong>{{ c.nama_kriteria }}</strong></td>
+                        <td class="text-right"><strong>{{ "%.2f"|format(c.bobot) }}</strong></td>
+                        <td class="text-right">{{ "%.0f"|format(c.bobot * 100) }}%</td>
                         <td>
                             {% if c.tipe == 'benefit' %}
                             <span class="badge badge-success">Benefit</span>
@@ -41,40 +61,52 @@
                             <span class="badge badge-danger">Cost</span>
                             {% endif %}
                         </td>
+                        <td>-</td>
                         <td>
                             <a href="{{ url_for('main.edit_criteria', id=c.id) }}" class="btn btn-sm btn-warning">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            <form method="POST" action="{{ url_for('main.delete_criteria', id=c.id) }}" style="display: inline;" onsubmit="return confirm('Hapus kriteria ini?')">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
+                    {% for child in c.children %}
+                    <tr style="background: var(--gray-50);">
+                        <td><code>{{ child.kode_kriteria }}</code></td>
+                        <td>&nbsp;&nbsp;&nbsp;&nbsp;<i class="fas fa-level-up-alt" style="transform: rotate(90deg); font-size: 10px;"></i> {{ child.nama_kriteria }}</td>
+                        <td class="text-right">{{ "%.2f"|format(child.bobot) }}</td>
+                        <td class="text-right">{{ "%.0f"|format(child.bobot * 100) }}%</td>
+                        <td>
+                            {% if child.tipe == 'benefit' %}
+                            <span class="badge badge-success">Benefit</span>
+                            {% else %}
+                            <span class="badge badge-danger">Cost</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ c.kode_kriteria }}</td>
+                        <td>
+                            <a href="{{ url_for('main.edit_criteria', id=child.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('main.delete_criteria', id=child.id) }}" style="display: inline;" onsubmit="return confirm('Hapus kriteria ini?')">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center">Tidak ada data kriteria</td>
+                        <td colspan="7" class="text-center">Tidak ada data kriteria</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-
-<div class="section">
-    <h2 class="section-title">Penjelasan</h2>
-    <div class="card">
-        <table class="info-table">
-            <tr>
-                <th>Tipe</th>
-                <th>Penjelasan</th>
-            </tr>
-            <tr>
-                <td><span class="badge badge-success">Benefit</span></td>
-                <td>Semakin tinggi nilai, semakin baik (maksimalisasi)</td>
-            </tr>
-            <tr>
-                <td><span class="badge badge-danger">Cost</span></td>
-                <td>Semakin rendah nilai, semakin baik (minimalisasi)</td>
-            </tr>
-        </table>
     </div>
 </div>
 {% endblock %}

@@ -14,15 +14,6 @@ class SAWCalculator:
         self.normalized_matrix = None
         self.weighted_matrix = None
         self.scores = None
-        # Default SAW criteria spec (kode, nama, tipe, bobot) based on provided table
-        self.criteria_spec = [
-            {"kode": "C1.1", "nama": "Lead Time (CV%)", "tipe": "cost", "bobot": 0.15},
-            {"kode": "C1.2", "nama": "Supplier Reliability", "tipe": "benefit", "bobot": 0.20},
-            {"kode": "C2.1", "nama": "Holding Cost", "tipe": "cost", "bobot": 0.15},
-            {"kode": "C2.2", "nama": "Stockout Cost", "tipe": "cost", "bobot": 0.20},
-            {"kode": "C3.1", "nama": "Demand Fluctuation", "tipe": "cost", "bobot": 0.15},
-            {"kode": "C3.2", "nama": "Supply Disruption", "tipe": "benefit", "bobot": 0.15},
-        ]
 
     def get_data(self):
         """Mengambil data dari database"""
@@ -31,25 +22,9 @@ class SAWCalculator:
         if not self.alternatives:
             return False
 
-        # Try to load Criteria from DB and map to spec if present
-        db_criteria = {c.kode_kriteria: c for c in Criteria.query.all()} if Criteria.query.count() > 0 else {}
-
-        # Build effective criteria list: prefer DB criteria when codes match, otherwise use spec
-        self.criteria = []
-        for spec in self.criteria_spec:
-            kod = spec['kode']
-            if kod in db_criteria:
-                c = db_criteria[kod]
-                self.criteria.append(c)
-            else:
-                # Lightweight object to hold spec values so rest of the code can access attributes
-                self.criteria.append(type('C', (), {
-                    'kode_kriteria': spec['kode'],
-                    'nama_kriteria': spec['nama'],
-                    'tipe': spec['tipe'],
-                    'bobot': spec['bobot'],
-                    'id': None
-                })())
+        self.criteria = Criteria.query.filter_by(parent_id=None).order_by(Criteria.kode_kriteria).all()
+        if not self.criteria:
+            self.criteria = Criteria.query.order_by(Criteria.kode_kriteria).all()
 
         return True
 
@@ -181,10 +156,10 @@ class SAWCalculator:
         return {
             'criteria': [{
                 'id': getattr(c, 'id', None),
-                'kode': getattr(c, 'kode_kriteria', getattr(c, 'kode', None)),
-                'nama': getattr(c, 'nama_kriteria', getattr(c, 'nama', None)),
-                'bobot': getattr(c, 'bobot', None) or self._spec_bobot_for_code(getattr(c, 'kode_kriteria', getattr(c, 'kode', None))),
-                'tipe': getattr(c, 'tipe', None) or self._spec_tipe_for_code(getattr(c, 'kode_kriteria', getattr(c, 'kode', None)))
+                'kode': getattr(c, 'kode_kriteria', None),
+                'nama': getattr(c, 'nama_kriteria', None),
+                'bobot': getattr(c, 'bobot', 0),
+                'tipe': getattr(c, 'tipe', 'cost')
             } for c in self.criteria],
             'decision_matrix': self.decision_matrix,
             'normalized_matrix': self.normalized_matrix,
@@ -198,18 +173,6 @@ class SAWCalculator:
                 'average_score': float(sum(self.scores) / len(self.scores)) if self.scores else 0.0
             }
         }
-
-    def _spec_bobot_for_code(self, kode):
-        for s in self.criteria_spec:
-            if s['kode'] == kode:
-                return s['bobot']
-        return None
-
-    def _spec_tipe_for_code(self, kode):
-        for s in self.criteria_spec:
-            if s['kode'] == kode:
-                return s['tipe']
-        return None
 
     def get_buffer_stock_recommendation(self, top_n=10):
         """Mendapatkan rekomendasi buffer stock"""

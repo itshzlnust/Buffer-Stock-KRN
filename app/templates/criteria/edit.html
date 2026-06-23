@@ -1,27 +1,28 @@
 {% extends 'base.html' %}
 
 {% block title %}Edit Kriteria - Sistem Buffer Stock{% endblock %}
-{% block page_title %}Edit Kriteria{% endblock %}
+{% block page_title %}Edit Kriteria: {{ criteria.nama_kriteria }}{% endblock %}
 
 {% block content %}
 <div class="section">
     <div class="card">
         <div class="card-header">
-            <h3>Edit Kriteria: {{ criteria.nama_kriteria }}</h3>
+            <h3>Form Edit Kriteria</h3>
         </div>
-        
-        <form method="POST" class="form">
+
+        <form method="POST" class="form" id="criteriaForm">
             <div class="form-row">
                 <div class="form-group">
                     <label>Kode Kriteria</label>
                     <input type="text" value="{{ criteria.kode_kriteria }}" disabled class="disabled">
+                    <small>Kode tidak dapat diubah. Hapus dan buat ulang jika ingin kode lain.</small>
                 </div>
                 <div class="form-group">
                     <label for="nama_kriteria">Nama Kriteria *</label>
                     <input type="text" id="nama_kriteria" name="nama_kriteria" value="{{ criteria.nama_kriteria }}" required>
                 </div>
             </div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="bobot">Bobot *</label>
@@ -30,17 +31,28 @@
                 <div class="form-group">
                     <label for="tipe">Tipe *</label>
                     <select id="tipe" name="tipe" required>
-                        <option value="benefit" {% if criteria.tipe == 'benefit' %}selected{% endif %}>Benefit</option>
-                        <option value="cost" {% if criteria.tipe == 'cost' %}selected{% endif %}>Cost</option>
+                        <option value="benefit" {% if criteria.tipe == 'benefit' %}selected{% endif %}>Benefit (Semakin tinggi semakin baik)</option>
+                        <option value="cost" {% if criteria.tipe == 'cost' %}selected{% endif %}>Cost (Semakin rendah semakin baik)</option>
                     </select>
                 </div>
             </div>
-            
+
+            <div class="form-group">
+                <label for="parent_kode">Parent (Opsional)</label>
+                <select id="parent_kode" name="parent_kode">
+                    <option value="">-- Kriteria Utama --</option>
+                    {% for p in parent_options %}
+                    <option value="{{ p.kode_kriteria }}" {% if criteria.parent_id == p.id %}selected{% endif %}>{{ p.kode_kriteria }} - {{ p.nama_kriteria }}</option>
+                    {% endfor %}
+                </select>
+                <small>Kosongkan jika ini kriteria utama. Isi jika ini sub-kriteria.</small>
+            </div>
+
             <div class="form-group">
                 <label for="keterangan">Keterangan</label>
                 <textarea id="keterangan" name="keterangan" rows="3">{{ criteria.keterangan or '' }}</textarea>
             </div>
-            
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Update

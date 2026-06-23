@@ -22,17 +22,19 @@ class Item(db.Model):
 
 class Criteria(db.Model):
     __tablename__ = 'criteria'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     kode_kriteria = db.Column(db.String(50), unique=True, nullable=False)
     nama_kriteria = db.Column(db.String(200), nullable=False)
     bobot = db.Column(db.Float, nullable=False)
     tipe = db.Column(db.String(20), nullable=False)  # 'benefit' atau 'cost'
     keterangan = db.Column(db.Text)
-    
+    parent_id = db.Column(db.Integer, db.ForeignKey('criteria.id'), nullable=True)
+
     # Relationship
     criteria_values = db.relationship('CriteriaValue', backref='criteria', lazy=True)
-    
+    children = db.relationship('Criteria', backref=db.backref('parent', remote_side=[id]), lazy=True)
+
     def __repr__(self):
         return f'<Criteria {self.kode_kriteria} - {self.nama_kriteria}>'
 
