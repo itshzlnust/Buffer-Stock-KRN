@@ -140,15 +140,20 @@ def load_report_data(report_path):
     records = []
     with report_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
         reader = csv.reader(file_obj)
-        next(reader, None)
-        next(reader, None)
 
         for row in reader:
-            if len(row) < 14:
+            if not row or len(row) < 14:
                 continue
 
-            kategori = (row[1] or '').strip()
-            nama_item = (row[2] or '').strip()
+            # Lewati baris header / sub-header yang dikenali
+            col1 = (row[1] or '').strip()
+            col2 = (row[2] or '').strip()
+            col3 = (row[3] or '').strip()
+            if col1 == 'Jenis Barang' or col2 in ('Nama Barang', 'Stok') or col3 == 'Lemari Kaca':
+                continue
+
+            kategori = col1
+            nama_item = col2
             if not kategori or not nama_item:
                 continue
 
@@ -177,6 +182,15 @@ def load_report_data(report_path):
     return records
 
 
+def _find_header_index(headers, candidates, default):
+    headers = [(h or '').strip().lower() for h in headers]
+    for candidate in candidates:
+        for i, h in enumerate(headers):
+            if candidate in h:
+                return i
+    return default
+
+
 def load_transaction_data(in_out_path):
     grouped = defaultdict(list)
     monthly_in = defaultdict(float)
@@ -185,22 +199,33 @@ def load_transaction_data(in_out_path):
 
     with in_out_path.open('r', encoding='utf-8-sig', newline='') as file_obj:
         reader = csv.reader(file_obj)
+        header = next(reader, [])
+
+        idx_no = _find_header_index(header, ['no'], 0)
+        idx_tanggal = _find_header_index(header, ['tanggal'], 1)
+        idx_jenis_trans = _find_header_index(header, ['jenis trans'], 2)
+        idx_in_out = _find_header_index(header, ['in/out'], 3)
+        idx_kategori = _find_header_index(header, ['jenis barang'], 5)
+        idx_nama = _find_header_index(header, ['nama barang'], 6)
+        idx_qty = _find_header_index(header, ['jumlah'], 9)
+        idx_remarks = _find_header_index(header, ['keterangan'], 10)
+
         for row in reader:
             if len(row) < 10:
                 continue
 
             try:
-                int((row[0] or '').strip())
+                int((row[idx_no] or '').strip())
             except ValueError:
                 continue
 
-            kategori = (row[5] or '').strip()
-            nama_item = (row[6] or '').strip()
-            in_out = (row[3] or '').strip().upper()
-            jenis_trans = (row[2] or '').strip().upper()
-            qty = _to_number(row[9])
-            trans_date = _parse_date(row[1])
-            remarks = (row[10] or '').strip()
+            kategori = (row[idx_kategori] or '').strip()
+            nama_item = (row[idx_nama] or '').strip()
+            in_out = (row[idx_in_out] or '').strip().upper()
+            jenis_trans = (row[idx_jenis_trans] or '').strip().upper()
+            qty = _to_number(row[idx_qty])
+            trans_date = _parse_date(row[idx_tanggal])
+            remarks = (row[idx_remarks] or '').strip()
 
             if not kategori or not nama_item or in_out not in ('IN', 'OUT'):
                 continue
