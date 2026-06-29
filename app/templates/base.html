@@ -73,6 +73,11 @@
         <header class="header">
             <h1>{% block page_title %}Dashboard{% endblock %}</h1>
             <div class="header-actions">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('auth.logout') }}" class="header-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                {% endif %}
                 <a href="{{ url_for('main.purchase_list') }}" class="header-link">
                     <i class="fas fa-shopping-cart"></i> PR
                 </a>

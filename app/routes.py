@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask_login import login_required
 from app import db
 from app.models import Item, Criteria, CriteriaValue, CalculationHistory, Stock, Usage, PurchaseRequest
 from app.saw_algorithm import SAWCalculator
@@ -10,6 +11,7 @@ main_bp = Blueprint('main', __name__)
 
 # ==================== DASHBOARD ====================
 @main_bp.route('/')
+@login_required
 def index():
     total_items = Item.query.count()
     total_criteria = Criteria.query.count()
@@ -53,6 +55,7 @@ def index():
 
 # ==================== ITEMS ====================
 @main_bp.route('/items')
+@login_required
 def items():
     page = request.args.get('page', 1, type=int)
     per_page = 20
@@ -77,6 +80,7 @@ def items():
     return render_template('items/index.html', items=items, categories=categories)
 
 @main_bp.route('/items/create', methods=['GET', 'POST'])
+@login_required
 def create_item():
     if request.method == 'POST':
         kode = request.form.get('kode_item')
@@ -118,6 +122,7 @@ def create_item():
     return render_template('items/create.html', categories=categories)
 
 @main_bp.route('/items/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_item(id):
     item = Item.query.get_or_404(id)
     
@@ -137,6 +142,7 @@ def edit_item(id):
     return render_template('items/edit.html', item=item, categories=categories)
 
 @main_bp.route('/items/delete/<int:id>', methods=['POST'])
+@login_required
 def delete_item(id):
     item = Item.query.get_or_404(id)
     db.session.delete(item)
@@ -146,6 +152,7 @@ def delete_item(id):
 
 # ==================== CRITERIA ====================
 @main_bp.route('/criteria')
+@login_required
 def criteria():
     criteria_list = Criteria.query.filter_by(parent_id=None).order_by(Criteria.kode_kriteria).all()
     all_criteria = Criteria.query.order_by(Criteria.kode_kriteria).all()
@@ -161,6 +168,7 @@ def criteria():
                           total_bobot=total_bobot)
 
 @main_bp.route('/criteria/create', methods=['GET', 'POST'])
+@login_required
 def create_criteria():
     if request.method == 'POST':
         kode = request.form.get('kode_kriteria')
@@ -203,6 +211,7 @@ def create_criteria():
     return render_template('criteria/create.html', parent_options=parent_options, total_bobot=total_bobot)
 
 @main_bp.route('/criteria/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_criteria(id):
     criteria = Criteria.query.get_or_404(id)
 
@@ -229,6 +238,7 @@ def edit_criteria(id):
     return render_template('criteria/edit.html', criteria=criteria, parent_options=parent_options)
 
 @main_bp.route('/criteria/delete/<int:id>', methods=['POST'])
+@login_required
 def delete_criteria(id):
     criteria = Criteria.query.get_or_404(id)
     db.session.delete(criteria)
@@ -237,6 +247,7 @@ def delete_criteria(id):
     return redirect(url_for('main.criteria'))
 
 @main_bp.route('/criteria/reset', methods=['POST'])
+@login_required
 def reset_criteria():
     default_criteria = [
         {'kode_kriteria': 'C1', 'nama_kriteria': 'Average Demand (Rata-rata Permintaan)', 'bobot': 0.25, 'tipe': 'benefit', 'keterangan': 'Rata-rata pengeluaran barang per bulan (unit)'},
@@ -255,6 +266,7 @@ def reset_criteria():
 
 # ==================== CRITERIA VALUES ====================
 @main_bp.route('/criteria-values')
+@login_required
 def criteria_values():
     items = Item.query.order_by(Item.kode_item).all()
     criteria_list = Criteria.query.order_by(Criteria.kode_kriteria).all()
@@ -273,6 +285,7 @@ def criteria_values():
                           value_matrix=value_matrix)
 
 @main_bp.route('/criteria-values/update', methods=['POST'])
+@login_required
 def update_criteria_values():
     item_id = request.form.get('item_id', type=int)
     
@@ -297,6 +310,7 @@ def update_criteria_values():
     return redirect(url_for('main.criteria_values'))
 
 @main_bp.route('/criteria-values/bulk-update', methods=['POST'])
+@login_required
 def bulk_update_criteria_values():
     """Update semua nilai kriteria sekaligus"""
     items = Item.query.all()
@@ -320,6 +334,7 @@ def bulk_update_criteria_values():
 
 # ==================== SAW CALCULATION ====================
 @main_bp.route('/calculation')
+@login_required
 def calculation():
     calc = SAWCalculator()
     results = calc.calculate()
@@ -331,6 +346,7 @@ def calculation():
     return render_template('calculation/index.html', results=results)
 
 @main_bp.route('/calculation/save', methods=['POST'])
+@login_required
 def save_calculation():
     nama = request.form.get('nama_perhitungan')
     keterangan = request.form.get('keterangan')
@@ -352,6 +368,7 @@ def save_calculation():
     return redirect(url_for('main.calculation_history'))
 
 @main_bp.route('/calculation/recommendation')
+@login_required
 def buffer_recommendation():
     top_n = request.args.get('top', 10, type=int)
     calc = SAWCalculator()
@@ -366,11 +383,13 @@ def buffer_recommendation():
                           top_n=top_n)
 
 @main_bp.route('/calculation/history')
+@login_required
 def calculation_history():
     history = CalculationHistory.query.order_by(CalculationHistory.tanggal.desc()).all()
     return render_template('calculation/history.html', history=history)
 
 @main_bp.route('/calculation/history/<int:id>')
+@login_required
 def view_calculation_history(id):
     history = CalculationHistory.query.get_or_404(id)
     results = json.loads(history.hasil)
@@ -378,6 +397,7 @@ def view_calculation_history(id):
 
 # ==================== STOCK MANAGEMENT ====================
 @main_bp.route('/stock')
+@login_required
 def stock():
     page = request.args.get('page', 1, type=int)
     per_page = 20
@@ -398,6 +418,7 @@ def stock():
     return render_template('stock/index.html', items=items, categories=categories)
 
 @main_bp.route('/stock/update', methods=['POST'])
+@login_required
 def update_stock():
     item_id = request.form.get('item_id', type=int)
     quantity = request.form.get('quantity', 0, type=int)
@@ -422,6 +443,7 @@ def update_stock():
     return redirect(url_for('main.stock'))
 
 @main_bp.route('/usage')
+@login_required
 def usage():
     available_years = [y for (y,) in db.session.query(Usage.tahun).distinct().order_by(Usage.tahun).all()]
     default_year = available_years[-1] if available_years else datetime.now().year
@@ -451,6 +473,7 @@ def usage():
                           years=available_years or [year])
 
 @main_bp.route('/usage/add', methods=['GET', 'POST'])
+@login_required
 def add_usage():
     if request.method == 'POST':
         item_id = request.form.get('item_id', type=int)
@@ -476,6 +499,7 @@ def add_usage():
 
 # ==================== PURCHASE REQUEST ====================
 @main_bp.route('/purchase')
+@login_required
 def purchase_list():
     page = request.args.get('page', 1, type=int)
     per_page = 20
@@ -489,6 +513,7 @@ def purchase_list():
     return render_template('purchase/index.html', prs=prs, status_filter=status_filter)
 
 @main_bp.route('/purchase/history')
+@login_required
 def purchase_history():
     status_filter = request.args.get('status', '')
     query = PurchaseRequest.query.join(Item)
@@ -498,6 +523,7 @@ def purchase_history():
     return render_template('purchase/history.html', prs=prs, status_filter=status_filter)
 
 @main_bp.route('/purchase/create', methods=['GET', 'POST'])
+@login_required
 def create_purchase():
     if request.method == 'POST':
         item_id = request.form.get('item_id', type=int)
@@ -532,11 +558,13 @@ def create_purchase():
     return render_template('purchase/create.html', items=items)
 
 @main_bp.route('/purchase/<int:id>')
+@login_required
 def purchase_detail(id):
     pr = PurchaseRequest.query.get_or_404(id)
     return render_template('purchase/detail.html', pr=pr)
 
 @main_bp.route('/purchase/approve/<int:id>', methods=['POST'])
+@login_required
 def approve_purchase(id):
     pr = PurchaseRequest.query.get_or_404(id)
     action = request.form.get('action')
@@ -559,6 +587,7 @@ def approve_purchase(id):
 
 # ==================== EXPORT CSV ====================
 @main_bp.route('/export/csv/<type>')
+@login_required
 def export_csv(type):
     if type == 'items':
         items = Item.query.all()
@@ -613,10 +642,12 @@ def export_csv(type):
 
 # ==================== EXPORT & STATIC PAGES ====================
 @main_bp.route('/export')
+@login_required
 def export_page():
     return render_template('export.html')
 
 @main_bp.route('/about')
+@login_required
 def about():
     return render_template('about.html')
 

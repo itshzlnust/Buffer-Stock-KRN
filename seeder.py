@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import Item, Criteria, CriteriaValue, Stock, Usage, PurchaseRequest, CalculationHistory
+from app.models import Item, Criteria, CriteriaValue, Stock, Usage, PurchaseRequest, CalculationHistory, AdminUser
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -324,39 +324,46 @@ def seed_data(force=False):
 
         criteria_data = [
             {
-                'kode_kriteria': 'C1',
-                'nama_kriteria': 'Average Demand (Rata-rata Permintaan)',
+                'kode_kriteria': 'C1.1',
+                'nama_kriteria': 'Lead Time',
                 'bobot': 0.25,
-                'tipe': 'benefit',
-                'keterangan': 'Rata-rata pengeluaran barang per bulan (unit) dari data transaksi OUT',
-            },
-            {
-                'kode_kriteria': 'C2',
-                'nama_kriteria': 'Lead Time (Waktu Tunggu)',
-                'bobot': 0.20,
                 'tipe': 'cost',
                 'keterangan': 'Estimasi jarak hari antar transaksi IN non-saldo (hari) - semakin rendah semakin baik',
             },
             {
-                'kode_kriteria': 'C3',
-                'nama_kriteria': 'Item Cost (Biaya Item)',
-                'bobot': 0.15,
+                'kode_kriteria': 'C1.2',
+                'nama_kriteria': 'Supplier Reliability',
+                'bobot': 0.25,
+                'tipe': 'benefit',
+                'keterangan': 'Tingkat keandalan supplier dalam pengiriman barang',
+            },
+            {
+                'kode_kriteria': 'C2.1',
+                'nama_kriteria': 'Holding Cost',
+                'bobot': 0.25,
                 'tipe': 'cost',
-                'keterangan': 'Proxy biaya item berbasis kategori barang',
+                'keterangan': 'Biaya penyimpanan barang per unit',
             },
             {
-                'kode_kriteria': 'C4',
-                'nama_kriteria': 'Stock Out Frequency',
-                'bobot': 0.20,
-                'tipe': 'benefit',
-                'keterangan': 'Jumlah bulan ketika OUT > IN untuk item tersebut',
+                'kode_kriteria': 'C2.2',
+                'nama_kriteria': 'Stockout Cost',
+                'bobot': 0.25,
+                'tipe': 'cost',
+                'keterangan': 'Biaya yang timbul akibat kehabisan stok',
             },
             {
-                'kode_kriteria': 'C5',
-                'nama_kriteria': 'Criticality Level',
-                'bobot': 0.20,
+                'kode_kriteria': 'C3.1',
+                'nama_kriteria': 'Demand Fluctuation',
+                'bobot': 0.25,
                 'tipe': 'benefit',
-                'keterangan': 'Tingkat kritikalitas item berdasarkan kategori infrastruktur',
+                'keterangan': 'Fluktuasi permintaan barang',
+            },
+            {
+                'kode_kriteria': 'C3.2',
+                'nama_kriteria': 'Supply Disruption',
+                'bobot': 0.25,
+                'tipe': 'benefit',
+                'keterangan': 'Potensi gangguan pasokan dari supplier',
             },
         ]
 
@@ -416,11 +423,12 @@ def seed_data(force=False):
             stock_rows += 1
 
             criteria_payload = {
-                'C1': metric['avg_demand'],
-                'C2': metric['lead_time'],
-                'C3': metric['item_cost_proxy'],
-                'C4': metric['stock_out_frequency'],
-                'C5': metric['criticality'],
+                'C1.1': metric['lead_time'],
+                'C1.2': metric['criticality'],
+                'C2.1': metric['item_cost_proxy'],
+                'C2.2': metric['stock_out_frequency'],
+                'C3.1': metric['avg_demand'],
+                'C3.2': metric['stock_out_frequency'],
             }
             for code, value in criteria_payload.items():
                 cv = CriteriaValue(item_id=item.id, criteria_id=criteria_objects[code].id, nilai=value)
@@ -469,6 +477,16 @@ def seed_data(force=False):
             pr_rows += 1
 
         db.session.commit()
+
+        if not AdminUser.query.filter_by(username='admin').first():
+            admin = AdminUser(
+                username='admin',
+                nama_lengkap='Administrator'
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print('Admin default dibuat: username=admin, password=admin123')
 
         print('\nSeeding selesai!')
         print(f'Total item: {len(sorted_records)}')
